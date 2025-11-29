@@ -44,7 +44,9 @@ export default function AdminDashboard() {
   const [totalBooks, setTotalBooks] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
-  const [logs, setLogs] = useState<Array<{id: number; user: string; action: string; time: string; type: string}>>([]);
+  const [logs, setLogs] = useState<Array<{id: number; userId: string; userName: string; action: string; timestamp: string; type: string}>>([]);
+  const [chartData, setChartData] = useState<Array<{date: string; visits: number}>>([]);
+  const [categoryStats, setCategoryStats] = useState<Array<{name: string; count: number}>>([]);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -55,11 +57,18 @@ export default function AdminDashboard() {
 
   const loadAnalytics = async () => {
     try {
-      const data = await adminApi.getAnalytics();
-      setActiveUsers(data.activeUsers);
-      setTotalVisits(data.todayVisits);
-      setTotalBooks(data.totalBooks);
-      setTotalUsers(data.totalUsers);
+      const [analyticsData, logsData, chartDataResponse] = await Promise.all([
+        adminApi.getAnalytics(),
+        adminApi.getActivityLogs(15),
+        adminApi.getAnalyticsData(),
+      ]);
+      setActiveUsers(analyticsData.activeUsers);
+      setTotalVisits(analyticsData.todayVisits);
+      setTotalBooks(analyticsData.totalBooks);
+      setTotalUsers(analyticsData.totalUsers);
+      setLogs(logsData.logs);
+      setChartData(chartDataResponse.dailyVisits);
+      setCategoryStats(chartDataResponse.categoryStats);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -111,29 +120,13 @@ export default function AdminDashboard() {
     };
   };
 
-  // Simulate log updates
+  // Refresh activity logs every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      const users = ["Vikram_R", "Sneha_P", "Anjali_M", "Rohit_D", "Guest_User"];
-      const actions = [
-        { action: "Logged In", type: "login" },
-        { action: "Started Reading 'Indian Polity'", type: "read" },
-        { action: "Downloaded 'MPSC Guide'", type: "download" },
-        { action: "Logged Out", type: "logout" },
-      ];
-      
-      const randomUser = users[Math.floor(Math.random() * users.length)];
-      const randomAction = actions[Math.floor(Math.random() * actions.length)];
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      setLogs(prev => [{
-        id: Date.now(),
-        user: randomUser,
-        action: randomAction.action,
-        time: time,
-        type: randomAction.type
-      }, ...prev.slice(0, 9)]);
-    }, 3000);
+      adminApi.getActivityLogs(15).then(data => {
+        setLogs(data.logs);
+      }).catch(err => console.error("Failed to refresh logs:", err));
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
@@ -251,7 +244,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={CHART_DATA}>
+                  <AreaChart data={chartData.length > 0 ? chartData : CHART_DATA}>
                     <defs>
                       <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#0A346F" stopOpacity={0.3}/>
@@ -262,7 +255,7 @@ export default function AdminDashboard() {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="visits" stroke="#0A346F" fillOpacity={1} fill="url(#colorVisits)" />
+                    <Area type="monotone" dataKey="visits" stroke="#0A346F" fillOpacity={1} fill="url(#colorVisits)" name="Visits" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -277,7 +270,11 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={PIE_DATA}
+                      data={categoryStats.length > 0 ? categoryStats.map((c, i) => ({
+                        name: c.name,
+                        value: c.count,
+                        color: ["#0A346F", "#008C45", "#FF9933", "#9ca3af"][i % 4]
+                      })) : PIE_DATA}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -285,7 +282,11 @@ export default function AdminDashboard() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {PIE_DATA.map((entry, index) => (
+                      {(categoryStats.length > 0 ? categoryStats.map((c, i) => ({
+                        name: c.name,
+                        value: c.count,
+                        color: ["#0A346F", "#008C45", "#FF9933", "#9ca3af"][i % 4]
+                      })) : PIE_DATA).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -293,7 +294,11 @@ export default function AdminDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="flex flex-wrap justify-center gap-4 mt-4">
-                  {PIE_DATA.map((entry, index) => (
+                  {(categoryStats.length > 0 ? categoryStats.map((c, i) => ({
+                    name: c.name,
+                    value: c.count,
+                    color: ["#0A346F", "#008C45", "#FF9933", "#9ca3af"][i % 4]
+                  })) : PIE_DATA).map((entry, index) => (
                     <div key={index} className="flex items-center text-xs text-gray-600">
                       <div className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: entry.color }}></div>
                       {entry.name}
@@ -318,9 +323,9 @@ export default function AdminDashboard() {
                 ) : (
                   logs.map((log) => (
                     <div key={log.id} className="flex items-start gap-3 text-xs animate-in fade-in slide-in-from-left-2 duration-300">
-                      <span className="opacity-50 text-gray-500">[{log.time}]</span>
-                      <span className={`font-bold ${log.type === 'alert' ? 'text-red-500' : 'text-blue-400'}`}>
-                        {log.user}
+                      <span className="opacity-50 text-gray-500">[{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span>
+                      <span className={`font-bold ${log.type === 'complete' ? 'text-green-400' : log.type === 'reading' ? 'text-blue-400' : 'text-yellow-400'}`}>
+                        {log.userName || log.userId}
                       </span>
                       <span className="text-gray-300">{log.action}</span>
                     </div>

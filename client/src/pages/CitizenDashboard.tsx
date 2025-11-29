@@ -18,7 +18,7 @@ import {
   User,
   ArrowRight
 } from "lucide-react";
-import { authApi, booksApi, type Book as BookType, type User as UserType, type UserStats } from "@/lib/api";
+import { authApi, booksApi, categoriesApi, type Book as BookType, type User as UserType, type UserStats, type Category } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
@@ -33,6 +33,7 @@ export default function CitizenDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [books, setBooks] = useState<BookType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [user, setUser] = useState<UserType | null>(null);
   const [stats, setStats] = useState<UserStats>({ booksRead: 0, borrowed: 0, points: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -45,14 +46,16 @@ export default function CitizenDashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, booksData] = await Promise.all([
+      const [userData, booksData, categoriesData] = await Promise.all([
         authApi.getCurrentUser(),
         booksApi.getAll(),
+        categoriesApi.getAll(),
       ]);
       
       setUser(userData.user);
       setStats(userData.stats);
       setBooks(booksData.books);
+      setCategories(categoriesData.categories);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -170,17 +173,39 @@ export default function CitizenDashboard() {
               </Button>
             </div>
 
+            {/* Category Filter Bar */}
+            {categories.length > 0 && (
+              <div className="bg-white p-3 rounded shadow-sm border border-gray-200 flex gap-2 overflow-x-auto">
+                <Button 
+                  variant={activeTab === "all" ? "default" : "outline"}
+                  onClick={() => setActiveTab("all")}
+                  className={activeTab === "all" ? "bg-[#1e3a8a]" : ""}
+                  size="sm"
+                  data-testid="button-category-all"
+                >
+                  All Books
+                </Button>
+                {categories.map(cat => (
+                  <Button 
+                    key={cat.id}
+                    variant={activeTab === `cat-${cat.id}` ? "default" : "outline"}
+                    onClick={() => setActiveTab(`cat-${cat.id}`)}
+                    className={activeTab === `cat-${cat.id}` ? "bg-[#1e3a8a]" : ""}
+                    size="sm"
+                    data-testid={`button-category-${cat.id}`}
+                  >
+                    {cat.name}
+                  </Button>
+                ))}
+              </div>
+            )}
+
             {/* Tabs for Categories */}
             <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                   <Book className="h-5 w-5 text-[#f97316]" /> Library Catalog
                 </h2>
-                <TabsList className="hidden md:flex bg-gray-100">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">All Books</TabsTrigger>
-                  <TabsTrigger value="ncert" className="data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">NCERT</TabsTrigger>
-                  <TabsTrigger value="competitive" className="data-[state=active]:bg-[#1e3a8a] data-[state=active]:text-white">Competitive</TabsTrigger>
-                </TabsList>
               </div>
 
               <TabsContent value="all" className="mt-0">
@@ -219,12 +244,6 @@ export default function CitizenDashboard() {
                 )}
               </TabsContent>
               
-              <TabsContent value="ncert" className="text-center py-12 text-gray-500">
-                Filtering by NCERT...
-              </TabsContent>
-              <TabsContent value="competitive" className="text-center py-12 text-gray-500">
-                Filtering by Competitive Exams...
-              </TabsContent>
             </Tabs>
           </div>
 

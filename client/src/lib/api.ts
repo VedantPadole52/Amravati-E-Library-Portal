@@ -13,6 +13,27 @@ export interface UserStats {
   points: number;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+export interface ActivityLog {
+  id: number;
+  userId: string;
+  userName: string;
+  action: string;
+  type: string;
+  timestamp: string;
+}
+
+export interface AnalyticsData {
+  dailyVisits: Array<{ date: string; visits: number }>;
+  categoryStats: Array<{ name: string; count: number }>;
+  topBooks: Array<{ title: string; reads: number }>;
+}
+
 export interface Book {
   id: number;
   title: string;
@@ -141,6 +162,17 @@ export const readingHistoryApi = {
   },
 };
 
+// Categories API
+export const categoriesApi = {
+  getAll: async (): Promise<{ categories: Category[] }> => {
+    return apiCall("/categories");
+  },
+
+  getBooksByCategory: async (categoryId: number): Promise<{ books: Book[] }> => {
+    return apiCall(`/books?categoryId=${categoryId}`);
+  },
+};
+
 // Admin APIs
 export const adminApi = {
   getAnalytics: async (): Promise<{
@@ -154,5 +186,13 @@ export const adminApi = {
 
   getSessions: async () => {
     return apiCall("/admin/sessions");
+  },
+
+  getActivityLogs: async (limit: number = 20): Promise<{ logs: ActivityLog[] }> => {
+    return apiCall(`/admin/activity-logs?limit=${limit}`);
+  },
+
+  getAnalyticsData: async (): Promise<AnalyticsData> => {
+    return apiCall("/admin/analytics-data");
   },
 };

@@ -262,6 +262,18 @@ export async function registerRoutes(
     }
   });
 
+  // Get books by category
+  app.get("/api/categories/:id/books", async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const allBooks = await storage.getAllBooks();
+      const filtered = allBooks.filter(b => b.categoryId === categoryId);
+      res.json({ books: filtered });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch books", error: error.message });
+    }
+  });
+
   // ============= READING HISTORY ROUTES =============
   
   // Get user's reading history
@@ -344,6 +356,27 @@ export async function registerRoutes(
       res.json({ sessions });
     } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch sessions", error: error.message });
+    }
+  });
+
+  // Get real activity logs
+  app.get("/api/admin/activity-logs", requireAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const logs = await storage.getActivityLogs(limit);
+      res.json({ logs });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch activity logs", error: error.message });
+    }
+  });
+
+  // Get analytics data (charts)
+  app.get("/api/admin/analytics-data", requireAdmin, async (req, res) => {
+    try {
+      const analyticsData = await storage.getAnalyticsData();
+      res.json(analyticsData);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch analytics data", error: error.message });
     }
   });
 

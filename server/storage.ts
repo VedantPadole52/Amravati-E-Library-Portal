@@ -56,6 +56,8 @@ export interface IStorage {
   getTotalUsers(): Promise<number>;
   getTotalBooks(): Promise<number>;
   getTodayVisits(): Promise<number>;
+  getActivityLogs(limit: number): Promise<any[]>;
+  getAnalyticsData(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -274,6 +276,93 @@ export class DatabaseStorage implements IStorage {
       .from(readingHistory)
       .where(sql`DATE(${readingHistory.lastAccessedAt}) = CURRENT_DATE`);
     return Number(result?.count || 0);
+  }
+
+  async getActivityLogs(limit: number): Promise<any[]> {
+    const logs = await db
+      .select({
+        id: readingHistory.id,
+        userId: readingHistory.userId,
+        userName: users.name,
+        action: sql`CASE 
+          WHEN ${readingHistory.completedAt} IS NOT NULL THEN 'Book Completed'
+          WHEN ${readingHistory.progress} > 0 THEN 'Reading in Progress'
+          ELSE 'Started Reading'
+        END`,
+        type: sql`CASE 
+          WHEN ${readingHistory.completedAt} IS NOT NULL THEN 'complete'
+          WHEN ${readingHistory.progress} > 0 THEN 'reading'
+          ELSE 'start'
+        END`,
+        timestamp: readingHistory.lastAccessedAt,
+      })
+      .from(readingHistory)
+      .leftJoin(users, eq(readingHistory.userId, users.id))
+      .orderBy(desc(readingHistory.lastAccessedAt))
+      .limit(limit);
+    
+    return logs.map(log => ({
+      ...log,
+      timestamp: log.timestamp?.toISOString() || new Date().toISOString(),
+    }));
+  }
+
+  async getAnalyticsData(): Promise<any> {
+    const now = new Date();
+    const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+
+    // Daily visits for the last 7 days
+    const dailyVisits = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(readingHistory)
+        .where(sql`DATE(${readingHistory.lastAccessedAt}) = ${dateStr}`);
+      
+      dailyVisits.push({
+        date: dateStr,
+        visits: Number(result?.count || 0),
+      });
+    }
+
+    // Category stats
+    const categoryStats = await db
+      .select({
+        name: categories.name,
+        count: sql<number>`count(${readingHistory.id})`,
+      })
+      .from(categories)
+      .leftJoin(books, eq(categories.id, books.categoryId))
+      .leftJoin(readingHistory, eq(books.id, readingHistory.bookId))
+      .groupBy(categories.id, categories.name)
+      .orderBy(sql`count(${readingHistory.id}) DESC`);
+
+    // Top books
+    const topBooks = await db
+      .select({
+        title: books.title,
+        reads: sql<number>`count(${readingHistory.id})`,
+      })
+      .from(books)
+      .leftJoin(readingHistory, eq(books.id, readingHistory.bookId))
+      .groupBy(books.id, books.title)
+      .orderBy(sql`count(${readingHistory.id}) DESC`)
+      .limit(5);
+
+    return {
+      dailyVisits,
+      categoryStats: categoryStats.map(c => ({
+        name: c.name,
+        count: Number(c.count || 0),
+      })),
+      topBooks: topBooks.map(b => ({
+        title: b.title,
+        reads: Number(b.reads || 0),
+      })),
+    };
   }
 }
 
