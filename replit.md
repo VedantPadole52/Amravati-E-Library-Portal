@@ -4,7 +4,7 @@
 
 This is a full-stack digital library portal for the Amravati Municipal Corporation, designed to provide citizens with access to a comprehensive collection of books, NCERTs, and historical archives. The application features distinct user experiences for citizens and administrators, with a strong emphasis on government authenticity combined with modern digital engagement and gamification features.
 
-The portal serves as a secure gateway to learning, offering thousands of searchable resources accessible from anywhere. It implements session-based authentication, real-time user tracking, comprehensive book management capabilities, file upload support for PDF documents, and unique engagement features like reading streaks and achievement badges.
+The portal serves as a secure gateway to learning, offering thousands of searchable resources accessible from anywhere. It implements session-based authentication, real-time user tracking, comprehensive book management capabilities, file upload support for PDF documents, live analytics dashboard, PDF and Excel report generation, user management with blocking capabilities, and unique engagement features like reading streaks, goals, ratings/reviews, wishlist, and achievements.
 
 ## User Preferences
 
@@ -12,31 +12,24 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Features Added (Latest Session)
 
-### Unique Engagement Features ✨
-- **Reading Streaks**: Track consecutive days of reading with current and longest streak counters
-- **Reading Goals**: Set annual book reading targets and track progress with visual charts
-- **Book Ratings & Reviews**: Citizens can rate books 1-5 stars and leave written reviews
-- **Reading Wishlist**: Save books to read later and build personal reading lists
-- **Achievements & Badges**: Earn badges for milestones (7-day streak, 10 books read, first review, etc)
-- **User Profile Page**: New `/profile` page showcasing all reading stats and achievements
+### Printable Reports ✨
+- **Print-Friendly Reports**: Browser-based printing with formatted report data
+- **System Overview Report**: Total users, books, visits, categories, top books
+- **Daily Activity Charts**: Last 7 days of user visits in table format
+- **Category Distribution**: Book counts per category with percentages
+- **Top Books Table**: Most read books statistics
 
-### Report Generation (PDF & Excel)
-- **4 Report Types**: System Overview, Category Statistics, User Activity, Book Circulation
-- **PDF Reports**: Professional formatted PDFs with Amravati branding
-- **Excel Export**: Multi-sheet Excel workbooks for data analysis
-- **Admin Reports Page**: Dedicated `/admin/reports` page with download buttons
+### AI-Powered Book Summaries ✨ (NEW)
+- **AI Summary Generation**: Automatically generates book summaries using OpenAI GPT-5
+- **Admin Control**: Admin can generate/regenerate summaries for any book
+- **Summary Display**: Shows AI-generated summaries to all users
+- **Database Storage**: Summaries cached in database with generation timestamp
+- **User-Friendly**: Beautiful UI component with loading states and error handling
 
-### Latest News Modal
-- **Latest News Button**: Added to header navigation for easy access to announcements
-- **Modal Popup**: Shows all announcements with full details and formatting
-- **Announcement Counter**: Badge showing number of active announcements
-- **Works on Mobile**: Full responsive design for all screen sizes
-
-### Analytics & Data Fixes
-- **Today's Visits Fix**: Now counts from active sessions (actual page visits) not just reading history
-- **Daily Chart Data**: Shows distinct active users per day with proper day labels
-- **Category Pie Chart**: Displays book distribution with interactive colored badges and percentages
-- **Real-time Updates**: All data pulls from actual database, no mock data
+### Admin-to-Citizen Book Sync (Fixed)
+- Books added by admin now sync to citizen portal within 3 seconds
+- Real data syncing (title, author, ISBN, category, cover)
+- Citizen dashboard auto-refreshes every 3 seconds to show new books
 
 ## System Architecture
 
@@ -54,7 +47,7 @@ Preferred communication style: Simple, everyday language.
 - `/citizen/dashboard` - Citizen library portal
 - `/citizen/reading-history` - Reading progress tracking
 - `/citizen/question-banks` - MPSC/UPSC question banks
-- `/profile` - User profile with reading stats and achievements (NEW)
+- `/profile` - User profile with reading stats and achievements
 - `/portal/admin-access` - Admin login
 - `/admin/dashboard` - Admin dashboard with real-time analytics
 - `/admin/books` - Book manager with PDF upload
@@ -62,13 +55,15 @@ Preferred communication style: Simple, everyday language.
 - `/admin/categories` - Category management
 - `/admin/settings` - Theme settings
 - `/admin/announcements` - Post and manage announcements
-- `/admin/reports` - Generate PDF and Excel reports
+- `/admin/reports` - Generate PDF, Excel, and printable reports
+- `/admin/reports/printable` - Browser-based printable reports (NEW)
 
 **UI Component System:**
 - shadcn/ui component library built on Radix UI primitives
 - Tailwind CSS v4 with custom design tokens for government branding
 - Royal Deep Blue (#0A346F), Digital Green (#008C45), Saffron (#FF9933)
 - Dark mode support throughout the app
+- BookSummary component for AI-generated summaries (NEW)
 
 ### Backend Architecture
 
@@ -78,10 +73,12 @@ Preferred communication style: Simple, everyday language.
 - Session middleware with PostgreSQL-backed session store
 - PDFKit for PDF generation
 - XLSX for Excel export
+- OpenAI GPT-5 for AI-powered summaries (NEW)
 
 **API Routes:**
 - `/api/auth/*` - Authentication (login, logout, register, current user)
 - `/api/books/*` - Book CRUD operations, search
+- `/api/books/:id/generate-summary` - Generate AI summary for book (NEW)
 - `/api/categories/*` - Category management
 - `/api/admin/users` - Get all users
 - `/api/admin/activity-logs` - Real-time activity logs
@@ -90,10 +87,10 @@ Preferred communication style: Simple, everyday language.
 - `/api/admin/export/:type` - Export to Excel (system, users, categories, circulation)
 - `/api/announcements` - Get and create announcements
 - `/api/upload` - File upload for PDFs and images
-- `/api/user/reading-streak` - User reading streak data (NEW)
-- `/api/user/reading-goal` - User reading goals (NEW)
-- `/api/user/achievements` - User achievements and badges (NEW)
-- `/api/user/wishlist` - User reading wishlist (NEW)
+- `/api/user/reading-streak` - User reading streak data
+- `/api/user/reading-goal` - User reading goals
+- `/api/user/achievements` - User achievements and badges
+- `/api/user/wishlist` - User reading wishlist
 
 **File Upload:**
 - Endpoint: `POST /api/upload` (requires admin authentication)
@@ -106,6 +103,10 @@ Preferred communication style: Simple, everyday language.
 **Database:**
 - PostgreSQL with Drizzle ORM
 - Tables: users, books, categories, reading_history, active_sessions, announcements, reading_streaks, reading_goals, book_ratings, reading_wishlist, achievements
+
+**Book Table Enhancements:**
+- `aiSummary` - Stores AI-generated book summaries
+- `summaryGeneratedAt` - Timestamp when summary was generated
 
 **Analytics Queries:**
 - Daily visits (last 7 days) from active sessions
@@ -129,6 +130,12 @@ Preferred communication style: Simple, everyday language.
 - Google Books link integration
 - Book search and filtering by category
 - Book ratings and reviews system
+- **AI-powered book summaries (NEW)**
+
+### AI Features
+- **GPT-5 Summary Generation**: Generates 2-3 paragraph summaries for books
+- **Admin Controls**: Generate/regenerate summaries anytime
+- **Smart Caching**: Summaries stored in database to reduce API calls
 
 ### Gamification
 - Reading Streaks (consecutive days)
@@ -140,6 +147,7 @@ Preferred communication style: Simple, everyday language.
 - Real-time dashboard with active user charts
 - Category distribution pie chart with 6 unique colors
 - Top books by popularity
+- **Printable reports with browser print (NEW)**
 - 4 different report types (PDF)
 - Excel export for data analysis
 - Daily visit trends from actual session data
@@ -149,7 +157,9 @@ Preferred communication style: Simple, everyday language.
 - Category management (create/delete)
 - User management with blocking
 - Announcement posting system
+- **AI Summary generation for books (NEW)**
 - PDF & Excel report generation
+- **Printable reports (NEW)**
 - Analytics data export
 
 ### Community Features
@@ -176,6 +186,12 @@ Preferred communication style: Simple, everyday language.
 - Email: `admin@amc.edu`
 - Password: `admin123`
 
+## Required Environment Variables
+
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
 ## Key Libraries
 
 - react-hook-form - Form validation
@@ -188,17 +204,19 @@ Preferred communication style: Simple, everyday language.
 - pdfkit - PDF generation
 - xlsx - Excel export
 - drizzle-orm - Database ORM
+- openai - AI-powered summaries (NEW)
 
 ## Database Tables
 
 1. **users** - User accounts with roles
-2. **books** - Book catalog with metadata
+2. **books** - Book catalog with metadata + AI summaries
 3. **categories** - Book categories
 4. **reading_history** - User reading progress
 5. **active_sessions** - Real-time user sessions
 6. **announcements** - Admin announcements
-7. **reading_streaks** - User reading streaks (NEW)
-8. **reading_goals** - Annual reading targets (NEW)
-9. **book_ratings** - Book ratings and reviews (NEW)
-10. **reading_wishlist** - User wishlists (NEW)
-11. **achievements** - User badges and achievements (NEW)
+7. **reading_streaks** - User reading streaks
+8. **reading_goals** - Annual reading targets
+9. **book_ratings** - Book ratings and reviews
+10. **reading_wishlist** - User wishlists
+11. **achievements** - User badges and achievements
+

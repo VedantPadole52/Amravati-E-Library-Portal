@@ -63,12 +63,16 @@ export const books = pgTable("books", {
   publishYear: integer("publish_year"),
   pages: integer("pages"),
   language: varchar("language", { length: 50 }).default("English"),
+  aiSummary: text("ai_summary"),
+  summaryGeneratedAt: timestamp("summary_generated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertBookSchema = createInsertSchema(books).omit({
   id: true,
   createdAt: true,
+  aiSummary: true,
+  summaryGeneratedAt: true,
 });
 
 export type InsertBook = z.infer<typeof insertBookSchema>;

@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool, db } from "./db";
-import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema, activeSessions, readingHistory, users } from "@shared/schema";
+import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema, activeSessions, readingHistory, users, books } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { WebSocketServer } from "ws";
 import multer, { type Multer } from "multer";
@@ -15,8 +15,12 @@ import fs from "fs";
 import PDFDocument from "pdfkit";
 import XLSX from "xlsx";
 import { eq, and } from "drizzle-orm";
+import OpenAI from "openai";
 
 const PgSession = connectPgSimple(session);
+
+// Initialize OpenAI client - the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 // Setup file upload
 const uploadDir = path.join(".", "public", "uploads");
@@ -320,6 +324,51 @@ export async function registerRoutes(
       res.json({ message: "Book deleted successfully" });
     } catch (error: any) {
       res.status(500).json({ message: "Failed to delete book", error: error.message });
+    }
+  });
+
+  // Generate AI Summary for Book (admin only)
+  app.post("/api/books/:id/generate-summary", requireAdmin, async (req, res) => {
+    try {
+      if (!openai) {
+        return res.status(400).json({ message: "OpenAI API key not configured" });
+      }
+
+      const id = parseInt(req.params.id);
+      const book = await storage.getBook(id);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+
+      const prompt = `Generate a concise 2-3 paragraph AI summary for this book:
+Title: ${book.title}
+Author: ${book.author}
+Category: ${book.categoryId}
+Description: ${book.description || 'No description available'}
+Pages: ${book.pages || 'Unknown'}
+
+Create an engaging summary that captures the essence of the book for library users.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [{ role: "user", content: prompt }],
+        max_completion_tokens: 1024,
+      });
+
+      const summary = response.choices[0].message.content;
+
+      // Update book with generated summary
+      const [updated] = await db
+        .update(books)
+        .set({ aiSummary: summary, summaryGeneratedAt: new Date() })
+        .where(eq(books.id, id))
+        .returning();
+
+      res.json({ message: "Summary generated successfully", summary: updated.aiSummary });
+    } catch (error: any) {
+      console.error("Summary generation error:", error);
+      res.status(500).json({ message: "Failed to generate summary", error: error.message });
     }
   });
 
