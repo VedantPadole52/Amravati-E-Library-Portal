@@ -1,5 +1,5 @@
 
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Search, User, Bell, LogOut, Menu, Home as HomeIcon, BookOpen, GraduationCap } from "lucide-react";
 import { useState } from "react";
@@ -103,26 +103,28 @@ export default function Header({ variant = "public" }: HeaderProps) {
 
             {/* Desktop Links */}
             <div className="hidden md:flex h-full">
-              <Link href={variant === "admin" ? "/admin/dashboard" : (variant === "citizen" ? "/citizen/dashboard" : "/")}>
-                <a className={`flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-white/10 transition-colors ${location === "/" ? "bg-white/15" : ""}`}>
-                  <HomeIcon className="h-4 w-4 mr-2" /> Home
-                </a>
-              </Link>
+              <button 
+                onClick={() => setLocation(variant === "admin" ? "/admin/dashboard" : (variant === "citizen" ? "/citizen/dashboard" : "/"))}
+                className={`flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-white/10 transition-colors ${location === "/" ? "bg-white/15" : ""}`}
+              >
+                <HomeIcon className="h-4 w-4 mr-2" /> Home
+              </button>
               
-              <a href="#" className="flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-white/10 transition-colors opacity-90 hover:opacity-100">
+              <button className="flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-white/10 transition-colors opacity-90 hover:opacity-100">
                 <BookOpen className="h-4 w-4 mr-2" /> NCERT Books
-              </a>
+              </button>
               
-              <a href="#" className="flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-white/10 transition-colors opacity-90 hover:opacity-100">
+              <button className="flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-white/10 transition-colors opacity-90 hover:opacity-100">
                 <GraduationCap className="h-4 w-4 mr-2" /> Competitive Exams
-              </a>
+              </button>
 
               {variant === "public" && (
-                <Link href="/login">
-                  <a className="flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-[#f97316] transition-colors ml-auto bg-[#f97316] text-white">
-                    <User className="h-4 w-4 mr-2" /> Login / Register
-                  </a>
-                </Link>
+                <button 
+                  onClick={() => setLocation("/login")}
+                  className="flex items-center px-6 h-full text-sm font-medium uppercase tracking-wide hover:bg-[#f97316] transition-colors ml-auto bg-[#f97316] text-white"
+                >
+                  <User className="h-4 w-4 mr-2" /> Login / Register
+                </button>
               )}
             </div>
           </div>
@@ -131,15 +133,21 @@ export default function Header({ variant = "public" }: HeaderProps) {
         {/* Mobile Menu Dropdown */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#172554] border-t border-blue-800">
-            <Link href="/">
-              <a className="block px-4 py-3 text-sm text-white border-b border-blue-800">Home</a>
-            </Link>
-            <a className="block px-4 py-3 text-sm text-white border-b border-blue-800">NCERT Books</a>
-            <a className="block px-4 py-3 text-sm text-white border-b border-blue-800">Competitive Exams</a>
+            <button 
+              onClick={() => setLocation("/")}
+              className="block w-full text-left px-4 py-3 text-sm text-white border-b border-blue-800"
+            >
+              Home
+            </button>
+            <button className="block w-full text-left px-4 py-3 text-sm text-white border-b border-blue-800">NCERT Books</button>
+            <button className="block w-full text-left px-4 py-3 text-sm text-white border-b border-blue-800">Competitive Exams</button>
             {variant === "public" && (
-              <Link href="/login">
-                <a className="block px-4 py-3 text-sm font-bold text-[#f97316]">Login / Register</a>
-              </Link>
+              <button 
+                onClick={() => setLocation("/login")}
+                className="block w-full text-left px-4 py-3 text-sm font-bold text-[#f97316]"
+              >
+                Login / Register
+              </button>
             )}
           </div>
         )}

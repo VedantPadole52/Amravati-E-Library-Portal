@@ -13,7 +13,8 @@ import {
   FileText, 
   UserCheck,
   AlertCircle,
-  Home as HomeIcon
+  Home as HomeIcon,
+  BarChart3
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { adminApi } from "@/lib/api";
@@ -150,14 +151,19 @@ export default function AdminDashboard() {
                <Button variant="secondary" className="w-full justify-start bg-white/10 text-white hover:bg-white/20 border-none">
                  <Activity className="mr-2 h-4 w-4" /> Dashboard
                </Button>
-               <Button variant="ghost" className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10">
+               <Button 
+                 variant="ghost" 
+                 className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
+                 onClick={() => setLocation("/admin/books")}
+                 data-testid="button-book-manager"
+               >
                  <BookOpen className="mr-2 h-4 w-4" /> Book Manager
                </Button>
                <Button variant="ghost" className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10">
                  <Users className="mr-2 h-4 w-4" /> User Manager
                </Button>
                <Button variant="ghost" className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10">
-                 <FileText className="mr-2 h-4 w-4" /> Reports
+                 <BarChart3 className="mr-2 h-4 w-4" /> Reports
                </Button>
              </nav>
           </div>

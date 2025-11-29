@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -116,7 +116,7 @@ export default function CitizenLogin() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <Label htmlFor="password" className="text-xs font-bold text-gray-500 uppercase">Password</Label>
-                    <a href="#" className="text-xs text-[#1e3a8a] font-medium hover:underline">Forgot?</a>
+                    <button type="button" className="text-xs text-[#1e3a8a] font-medium hover:underline">Forgot?</button>
                   </div>
                   <Input 
                     id="password" 
@@ -142,7 +142,7 @@ export default function CitizenLogin() {
 
               <div className="mt-8 pt-6 border-t border-gray-100 text-center">
                  <p className="text-sm text-gray-600">
-                   Admin? <Link href="/portal/admin-access"><span className="text-[#1e3a8a] font-bold hover:underline cursor-pointer">Login Here</span></Link>
+                   Admin? <button onClick={() => setLocation("/portal/admin-access")} className="text-[#1e3a8a] font-bold hover:underline">Login Here</button>
                  </p>
               </div>
             </div>

@@ -15,7 +15,8 @@ import {
   Award,
   Download,
   MoreHorizontal,
-  User
+  User,
+  ArrowRight
 } from "lucide-react";
 import { authApi, booksApi, type Book as BookType, type User as UserType, type UserStats } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -239,6 +240,14 @@ export default function CitizenDashboard() {
                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
                  <p>No recent activity</p>
                </div>
+               <Button 
+                 variant="outline" 
+                 className="w-full mt-2 text-xs justify-center"
+                 onClick={() => setLocation("/citizen/reading-history")}
+                 data-testid="button-view-history"
+               >
+                 View Full History <ArrowRight className="h-3 w-3 ml-1" />
+               </Button>
             </div>
 
             {/* Quick Links */}
@@ -247,8 +256,13 @@ export default function CitizenDashboard() {
                  <Award className="h-4 w-4 text-gray-500" /> Quick Links
                </h3>
                <div className="space-y-2">
-                 <Button variant="outline" className="w-full justify-start text-xs h-9 border-gray-200">
-                   <Download className="h-3 w-3 mr-2 text-gray-400" /> Downloads
+                 <Button 
+                   variant="outline" 
+                   className="w-full justify-start text-xs h-9 border-gray-200"
+                   onClick={() => setLocation("/citizen/reading-history")}
+                   data-testid="button-reading-history"
+                 >
+                   <History className="h-3 w-3 mr-2 text-gray-400" /> Reading History
                  </Button>
                  <Button variant="outline" className="w-full justify-start text-xs h-9 border-gray-200">
                    <Bookmark className="h-3 w-3 mr-2 text-gray-400" /> My Bookmarks

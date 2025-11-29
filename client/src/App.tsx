@@ -10,6 +10,8 @@ import CitizenLogin from "@/pages/CitizenLogin";
 import AdminLogin from "@/pages/AdminLogin";
 import CitizenDashboard from "@/pages/CitizenDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
+import ReadingHistory from "@/pages/ReadingHistory";
+import AdminBookManager from "@/pages/AdminBookManager";
 
 function Router() {
   return (
@@ -18,7 +20,9 @@ function Router() {
       <Route path="/login" component={CitizenLogin} />
       <Route path="/portal/admin-access" component={AdminLogin} />
       <Route path="/citizen/dashboard" component={CitizenDashboard} />
+      <Route path="/citizen/reading-history" component={ReadingHistory} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/books" component={AdminBookManager} />
       <Route component={NotFound} />
     </Switch>
   );
