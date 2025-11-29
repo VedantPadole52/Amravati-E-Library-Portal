@@ -201,9 +201,10 @@ export default function CitizenDashboard() {
   };
 
   const getBookCoverImage = (book: any) => {
-    if (book.coverUrl && book.coverUrl.startsWith("/uploads")) {
-      return book.coverUrl; // Real uploaded image
+    if (book.coverUrl && (book.coverUrl.startsWith("http") || book.coverUrl.startsWith("/uploads"))) {
+      return book.coverUrl; // Real uploaded or external image
     }
+    // Placeholder SVG if no cover URL
     return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300'%3E%3Crect fill='%231e3a8a' width='200' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='24' fill='white' text-anchor='middle' dominant-baseline='middle'%3E" + encodeURIComponent(book.title.substring(0, 15)) + "%3C/text%3E%3C/svg%3E";
   };
 
