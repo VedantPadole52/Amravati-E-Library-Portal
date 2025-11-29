@@ -115,6 +115,14 @@ export default function CitizenDashboard() {
   };
 
   const openPDFViewer = (book: BookType) => {
+    if (!book.pdfUrl) {
+      toast({
+        variant: "destructive",
+        title: "PDF Not Available",
+        description: "This book doesn't have a PDF file attached yet."
+      });
+      return;
+    }
     setSelectedBook(book);
     setShowPDFViewer(true);
   };
@@ -511,6 +519,7 @@ export default function CitizenDashboard() {
           title={selectedBook.title}
           author={selectedBook.author}
           bookId={selectedBook.id}
+          pdfUrl={selectedBook.pdfUrl || undefined}
           onClose={() => setShowPDFViewer(false)}
         />
       )}

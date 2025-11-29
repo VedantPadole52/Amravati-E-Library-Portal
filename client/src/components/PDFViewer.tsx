@@ -7,12 +7,13 @@ interface PDFViewerProps {
   title: string;
   author: string;
   bookId?: number;
+  pdfUrl?: string;
   onClose: () => void;
 }
 
-export default function PDFViewer({ title, author, bookId, onClose }: PDFViewerProps) {
+export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PDFViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 50; // Dummy PDF has 50 pages
+  const totalPages = pdfUrl ? 1 : 50;
 
   // Track reading activity
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function PDFViewer({ title, author, bookId, onClose }: PDFViewerP
     }
   }, [bookId]);
 
-  // Dummy PDF content pages
+  // Dummy PDF content pages (only shown if no pdfUrl)
   const dummyPages = Array.from({ length: totalPages }, (_, i) => `
     Chapter ${Math.floor(i / 10) + 1}
     
@@ -61,10 +62,19 @@ export default function PDFViewer({ title, author, bookId, onClose }: PDFViewerP
           </Button>
         </CardHeader>
 
-        <CardContent className="flex-1 overflow-auto">
-          <div className="bg-gray-100 p-8 rounded min-h-96 whitespace-pre-wrap text-sm leading-relaxed">
-            {dummyPages[currentPage - 1]}
-          </div>
+        <CardContent className="flex-1 overflow-auto bg-gray-100">
+          {pdfUrl ? (
+            <iframe 
+              src={pdfUrl + "#page=" + currentPage}
+              className="w-full h-full rounded"
+              style={{ minHeight: "500px" }}
+              data-testid="pdf-iframe"
+            />
+          ) : (
+            <div className="p-8 rounded min-h-96 whitespace-pre-wrap text-sm leading-relaxed bg-white">
+              {dummyPages[currentPage - 1]}
+            </div>
+          )}
         </CardContent>
 
         <div className="border-t p-4 flex items-center justify-between">
