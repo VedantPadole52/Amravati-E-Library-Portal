@@ -47,6 +47,8 @@ export interface Book {
   publishYear: number | null;
   pages: number | null;
   language: string | null;
+  aiSummary: string | null;
+  summaryGeneratedAt: string | null;
   createdAt: string;
 }
 

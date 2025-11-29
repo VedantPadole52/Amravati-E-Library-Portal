@@ -19,6 +19,7 @@ import {
 import { booksApi, type Book } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import BookSummary from "@/components/BookSummary";
 
 export default function AdminBookManager() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -29,6 +30,7 @@ export default function AdminBookManager() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [, setLocation] = useLocation();
+  const [selectedBookForSummary, setSelectedBookForSummary] = useState<Book | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -400,6 +402,15 @@ export default function AdminBookManager() {
                         <Button
                           size="sm"
                           variant="outline"
+                          className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                          onClick={() => setSelectedBookForSummary(book)}
+                          data-testid={`button-summary-${book.id}`}
+                        >
+                          ✨ Summary
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="text-blue-600 border-blue-200 hover:bg-blue-50"
                         >
                           <Edit2 className="h-4 w-4" />
@@ -436,6 +447,36 @@ export default function AdminBookManager() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Book Summary Modal */}
+          {selectedBookForSummary && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedBookForSummary(null)}>
+              <Card className="w-full max-w-2xl max-h-96 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>{selectedBookForSummary.title}</CardTitle>
+                      <p className="text-sm text-gray-600 mt-1">by {selectedBookForSummary.author}</p>
+                    </div>
+                    <button onClick={() => setSelectedBookForSummary(null)}>
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <BookSummary 
+                    bookId={selectedBookForSummary.id}
+                    summary={selectedBookForSummary.aiSummary}
+                    isAdmin={true}
+                    onSummaryGenerated={(summary) => {
+                      setBooks(books.map(b => b.id === selectedBookForSummary.id ? {...b, aiSummary: summary} : b));
+                      setSelectedBookForSummary({...selectedBookForSummary, aiSummary: summary});
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
     </div>
