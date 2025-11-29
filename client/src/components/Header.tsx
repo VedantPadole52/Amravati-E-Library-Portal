@@ -107,6 +107,9 @@ export default function Header({ variant = "public" }: HeaderProps) {
               <p className="text-sm md:text-base text-gray-600 font-medium uppercase tracking-wide">
                 {t('amravatiMunicipal')}
               </p>
+              <p className="text-xs md:text-sm text-[#f97316] font-bold italic mt-2 tracking-wide">
+                "Knowledge Unlocked, Futures Brightened"
+              </p>
             </div>
           </div>
 

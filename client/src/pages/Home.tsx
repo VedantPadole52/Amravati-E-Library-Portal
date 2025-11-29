@@ -46,9 +46,12 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 container mx-auto px-4 text-center">
-          <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-medium mb-6 uppercase tracking-widest animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-medium mb-2 uppercase tracking-widest animate-in fade-in slide-in-from-bottom-4 duration-700">
             Official Digital E-Library Portal
           </span>
+          <p className="text-white/80 text-sm md:text-base mb-6 italic font-semibold animate-in fade-in slide-in-from-bottom-3 duration-700 delay-100">
+            "Knowledge Unlocked, Futures Brightened"
+          </p>
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight max-w-4xl mx-auto drop-shadow-lg animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
             {t('knowledge')} <br/>
             <span className="text-yellow-400">{t('amravatiDigitalFuture')}</span>
