@@ -141,3 +141,8 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@keyframes ticker {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}

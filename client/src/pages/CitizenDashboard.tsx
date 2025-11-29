@@ -14,7 +14,8 @@ import {
   History, 
   Award,
   Download,
-  MoreHorizontal
+  MoreHorizontal,
+  User
 } from "lucide-react";
 
 import book1 from "@assets/generated_images/history_book_cover.png";

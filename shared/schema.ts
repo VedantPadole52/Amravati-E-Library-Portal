@@ -1,18 +1,148 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
+// Users Table - Keep existing ID type (varchar with UUID)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  phone: varchar("phone", { length: 15 }),
   password: text("password").notNull(),
+  role: varchar("role", { length: 20 }).notNull().default("citizen"), // 'citizen' or 'admin'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const registerSchema = insertUserSchema.extend({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Categories Table
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+});
+
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+});
+
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type Category = typeof categories.$inferSelect;
+
+// Books Table
+export const books = pgTable("books", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 500 }).notNull(),
+  author: varchar("author", { length: 255 }).notNull(),
+  categoryId: integer("category_id").references(() => categories.id),
+  subcategory: varchar("subcategory", { length: 100 }),
+  description: text("description"),
+  coverUrl: text("cover_url"),
+  pdfUrl: text("pdf_url"),
+  isbn: varchar("isbn", { length: 20 }),
+  publishYear: integer("publish_year"),
+  pages: integer("pages"),
+  language: varchar("language", { length: 50 }).default("English"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertBookSchema = createInsertSchema(books).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertBook = z.infer<typeof insertBookSchema>;
+export type Book = typeof books.$inferSelect;
+
+// Reading History Table
+export const readingHistory = pgTable("reading_history", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  bookId: integer("book_id").references(() => books.id).notNull(),
+  progress: integer("progress").default(0), // Percentage (0-100)
+  lastReadPage: integer("last_read_page").default(0),
+  isBookmarked: boolean("is_bookmarked").default(false),
+  lastAccessedAt: timestamp("last_accessed_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertReadingHistorySchema = createInsertSchema(readingHistory).omit({
+  id: true,
+  lastAccessedAt: true,
+});
+
+export type InsertReadingHistory = z.infer<typeof insertReadingHistorySchema>;
+export type ReadingHistory = typeof readingHistory.$inferSelect;
+
+// Active Sessions Table (for real-time tracking)
+export const activeSessions = pgTable("active_sessions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  sessionId: varchar("session_id", { length: 255 }).notNull().unique(),
+  connectedAt: timestamp("connected_at").defaultNow().notNull(),
+  lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
+});
+
+export const insertActiveSessionSchema = createInsertSchema(activeSessions).omit({
+  id: true,
+  connectedAt: true,
+  lastActivityAt: true,
+});
+
+export type InsertActiveSession = z.infer<typeof insertActiveSessionSchema>;
+export type ActiveSession = typeof activeSessions.$inferSelect;
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  readingHistory: many(readingHistory),
+  activeSessions: many(activeSessions),
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  books: many(books),
+}));
+
+export const booksRelations = relations(books, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [books.categoryId],
+    references: [categories.id],
+  }),
+  readingHistory: many(readingHistory),
+}));
+
+export const readingHistoryRelations = relations(readingHistory, ({ one }) => ({
+  user: one(users, {
+    fields: [readingHistory.userId],
+    references: [users.id],
+  }),
+  book: one(books, {
+    fields: [readingHistory.bookId],
+    references: [books.id],
+  }),
+}));
+
+export const activeSessionsRelations = relations(activeSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [activeSessions.userId],
+    references: [users.id],
+  }),
+}));

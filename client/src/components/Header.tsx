@@ -161,13 +161,6 @@ export default function Header({ variant = "public" }: HeaderProps) {
           </div>
         </div>
       </div>
-      
-      <style jsx global>{`
-        @keyframes ticker {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-      `}</style>
     </div>
   );
 }
