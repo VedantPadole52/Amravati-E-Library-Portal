@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
-import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema } from "@shared/schema";
+import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { WebSocketServer } from "ws";
 import multer, { type Multer } from "multer";
@@ -551,6 +551,43 @@ export async function registerRoutes(
       doc.end();
     } catch (error: any) {
       res.status(500).json({ message: "Failed to generate report", error: error.message });
+    }
+  });
+
+  // ============= ANNOUNCEMENTS ROUTES =============
+
+  // Get all announcements
+  app.get("/api/announcements", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const announcements = await storage.getAnnouncements(limit);
+      res.json({ announcements });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch announcements", error: error.message });
+    }
+  });
+
+  // Create announcement (admin only)
+  app.post("/api/announcements", requireAdmin, async (req, res) => {
+    try {
+      const validated = insertAnnouncementSchema.parse(req.body);
+      const announcement = await storage.createAnnouncement({
+        ...validated,
+        createdBy: req.session.userId!
+      });
+      res.json({ announcement });
+    } catch (error: any) {
+      res.status(400).json({ message: "Failed to create announcement", error: error.message });
+    }
+  });
+
+  // Delete announcement (admin only)
+  app.delete("/api/announcements/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteAnnouncement(parseInt(req.params.id));
+      res.json({ message: "Announcement deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to delete announcement" });
     }
   });
 

@@ -4,6 +4,7 @@ import {
   categories,
   readingHistory,
   activeSessions,
+  announcements,
   type User, 
   type InsertUser,
   type Book,
@@ -13,7 +14,9 @@ import {
   type ReadingHistory,
   type InsertReadingHistory,
   type ActiveSession,
-  type InsertActiveSession
+  type InsertActiveSession,
+  type Announcement,
+  type InsertAnnouncement
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -65,6 +68,11 @@ export interface IStorage {
   blockUser(userId: string): Promise<User | undefined>;
   unblockUser(userId: string): Promise<User | undefined>;
   getUserActivityByPeriod(period: "daily" | "weekly" | "monthly" | "yearly"): Promise<any[]>;
+  
+  // Announcements
+  createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
+  getAnnouncements(limit?: number): Promise<Announcement[]>;
+  deleteAnnouncement(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -394,6 +402,29 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  // Announcements
+  async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
+    const [newAnnouncement] = await db
+      .insert(announcements)
+      .values(announcement)
+      .returning();
+    return newAnnouncement;
+  }
+
+  async getAnnouncements(limit: number = 10): Promise<Announcement[]> {
+    return await db
+      .select()
+      .from(announcements)
+      .where(eq(announcements.isPublished, true))
+      .orderBy(desc(announcements.createdAt))
+      .limit(limit);
+  }
+
+  async deleteAnnouncement(id: number): Promise<boolean> {
+    const result = await db.delete(announcements).where(eq(announcements.id, id));
+    return !!result;
+  }
+
   async getUserActivityByPeriod(period: "daily" | "weekly" | "monthly" | "yearly"): Promise<any[]> {
     const intervalMap = {
       daily: "1 day",
@@ -413,7 +444,7 @@ export class DatabaseStorage implements IStorage {
       count: sql<number>`count(distinct ${readingHistory.userId})`
     })
     .from(readingHistory)
-    .where(sql`${readingHistory.lastAccessedAt} > now() - interval '${sql.raw(interval)}'`)
+    .where(sql`${readingHistory.lastActivityAt} > now() - interval '${sql.raw(interval)}'`)
     .groupBy(sql<string>`to_char(${readingHistory.lastAccessedAt}, ${
       period === "daily" ? "'YYYY-MM-DD'" :
       period === "weekly" ? "'YYYY-W'||to_char(${readingHistory.lastAccessedAt}, 'WW')" :

@@ -16,6 +16,7 @@ import AdminBookManager from "@/pages/AdminBookManager";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminCategories from "@/pages/AdminCategories";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminAnnouncements from "@/pages/AdminAnnouncements";
 import QuestionBanks from "@/pages/QuestionBanks";
 
 function Router() {
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/categories" component={AdminCategories} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/announcements" component={AdminAnnouncements} />
       <Route component={NotFound} />
     </Switch>
   );

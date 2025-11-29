@@ -14,7 +14,8 @@ import {
   UserCheck,
   AlertCircle,
   Home as HomeIcon,
-  BarChart3
+  BarChart3,
+  Bell
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { adminApi } from "@/lib/api";
@@ -207,6 +208,14 @@ export default function AdminDashboard() {
                  data-testid="button-category-manager"
                >
                  <BarChart3 className="mr-2 h-4 w-4" /> Categories
+               </Button>
+               <Button 
+                 variant="ghost" 
+                 className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
+                 onClick={() => setLocation("/admin/announcements")}
+                 data-testid="button-announcements"
+               >
+                 <Bell className="mr-2 h-4 w-4" /> Post Announcements
                </Button>
              </nav>
           </div>

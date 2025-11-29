@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, BookOpen, ArrowRight, Library, GraduationCap, History } from "lucide-react";
+import { Search, BookOpen, ArrowRight, Library, GraduationCap, History, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/LanguageContext";
 import { getTranslation } from "@/lib/translations";
@@ -17,6 +17,22 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { language } = useLanguage();
   const t = (key: any) => getTranslation(language, key);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const response = await fetch("/api/announcements?limit=5");
+        if (response.ok) {
+          const data = await response.json();
+          setAnnouncements(data.announcements || []);
+        }
+      } catch (error) {
+        console.log("Failed to fetch announcements");
+      }
+    };
+    fetchAnnouncements();
+  }, []);
 
   const handleNcertClick = () => {
     setLocation("/login");
@@ -129,6 +145,29 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Latest Announcements */}
+      {announcements.length > 0 && (
+        <section className="py-12 bg-blue-50 border-b border-blue-200">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center gap-2 mb-6">
+              <Bell className="h-6 w-6 text-blue-600" />
+              <h2 className="text-2xl font-bold text-primary">Latest Notices</h2>
+            </div>
+            <div className="space-y-3">
+              {announcements.map(announcement => (
+                <div key={announcement.id} className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="font-bold text-gray-800 text-lg">{announcement.title}</h3>
+                  <p className="text-gray-600 text-sm mt-1">{announcement.content.substring(0, 150)}...</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(announcement.createdAt).toLocaleDateString('en-IN')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Call to Action */}
       <section className="py-16 bg-secondary/50">
