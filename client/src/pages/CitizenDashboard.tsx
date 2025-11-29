@@ -122,6 +122,38 @@ export default function CitizenDashboard() {
     setShowPDFViewer(true);
   };
 
+  const downloadBook = async (book: BookType) => {
+    if (!book.pdfUrl) {
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "This book doesn't have a PDF file available."
+      });
+      return;
+    }
+
+    try {
+      // Create a link element and trigger download
+      const link = document.createElement("a");
+      link.href = book.pdfUrl;
+      link.download = `${book.title.replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download Started",
+        description: `"${book.title}" is being downloaded for offline reading.`
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Download Error",
+        description: "Failed to download the book. Please try again."
+      });
+    }
+  };
+
   const loadData = async (page: number = 1) => {
     try {
       const [userData, booksData, categoriesData] = await Promise.all([
@@ -377,6 +409,15 @@ export default function CitizenDashboard() {
                                 Read
                               </Button>
                             </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs h-7 border-green-200 text-green-600 hover:bg-green-50"
+                              onClick={() => downloadBook(book)}
+                              data-testid={`button-download-${book.id}`}
+                            >
+                              ⬇️ Download for Offline
+                            </Button>
                             {book.description && book.description.startsWith("Google Books:") && (
                               <Button 
                                 size="sm" 
