@@ -110,9 +110,12 @@ export const authApi = {
 
 // Book APIs
 export const booksApi = {
-  getAll: async (search?: string): Promise<{ books: Book[] }> => {
-    const query = search ? `?search=${encodeURIComponent(search)}` : "";
-    return apiCall(`/books${query}`);
+  getAll: async (search?: string, page: number = 1, limit: number = 20): Promise<{ books: Book[]; total: number; page: number; limit: number }> => {
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiCall(`/books?${params.toString()}`);
   },
 
   getById: async (id: number): Promise<{ book: Book }> => {

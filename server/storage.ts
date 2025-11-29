@@ -118,8 +118,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Book operations
-  async getAllBooks(): Promise<Book[]> {
-    return await db.select().from(books).orderBy(desc(books.createdAt));
+  async getAllBooks(page: number = 1, limit: number = 20): Promise<{ books: Book[]; total: number }> {
+    const offset = (page - 1) * limit;
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(books);
+    const bookList = await db.select().from(books).orderBy(desc(books.createdAt)).limit(limit).offset(offset);
+    return { books: bookList, total: Number(total) };
   }
 
   async getBook(id: number): Promise<Book | undefined> {
@@ -146,14 +149,20 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  async searchBooks(query: string): Promise<Book[]> {
+  async searchBooks(query: string, page: number = 1, limit: number = 20): Promise<{ books: Book[]; total: number }> {
     const searchPattern = `%${query}%`;
-    return await db
+    const offset = (page - 1) * limit;
+    const [{ total }] = await db
+      .select({ total: sql<number>`count(*)` })
+      .from(books)
+      .where(sql`${books.title} ILIKE ${searchPattern} OR ${books.author} ILIKE ${searchPattern} OR ${books.subcategory} ILIKE ${searchPattern}`);
+    const bookList = await db
       .select()
       .from(books)
-      .where(
-        sql`${books.title} ILIKE ${searchPattern} OR ${books.author} ILIKE ${searchPattern} OR ${books.subcategory} ILIKE ${searchPattern}`
-      );
+      .where(sql`${books.title} ILIKE ${searchPattern} OR ${books.author} ILIKE ${searchPattern} OR ${books.subcategory} ILIKE ${searchPattern}`)
+      .limit(limit)
+      .offset(offset);
+    return { books: bookList, total: Number(total) };
   }
 
   // Category operations

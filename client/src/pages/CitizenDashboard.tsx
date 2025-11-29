@@ -42,6 +42,9 @@ export default function CitizenDashboard() {
   const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [pageSize] = useState(20);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -111,17 +114,19 @@ export default function CitizenDashboard() {
     setShowPDFViewer(true);
   };
 
-  const loadData = async () => {
+  const loadData = async (page: number = 1) => {
     try {
       const [userData, booksData, categoriesData] = await Promise.all([
         authApi.getCurrentUser(),
-        booksApi.getAll(),
+        booksApi.getAll(undefined, page, pageSize),
         categoriesApi.getAll(),
       ]);
       
       setUser(userData.user);
       setStats(userData.stats);
       setBooks(booksData.books);
+      setTotalBooks(booksData.total);
+      setCurrentPage(page);
       setCategories(categoriesData.categories);
     } catch (error: any) {
       toast({
@@ -135,15 +140,17 @@ export default function CitizenDashboard() {
     }
   };
 
-  const handleSearch = async () => {
+  const handleSearch = async (page: number = 1) => {
     if (!searchQuery.trim()) {
-      loadData();
+      loadData(page);
       return;
     }
     
     try {
-      const data = await booksApi.getAll(searchQuery);
+      const data = await booksApi.getAll(searchQuery, page, pageSize);
       setBooks(data.books);
+      setTotalBooks(data.total);
+      setCurrentPage(page);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -297,6 +304,7 @@ export default function CitizenDashboard() {
                             src={getBookCover(book)} 
                             alt={book.title} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            loading="lazy"
                             onError={(e) => {
                               const img = e.target as HTMLImageElement;
                               img.src = FALLBACK_COVERS[book.id % 3];
@@ -372,8 +380,32 @@ export default function CitizenDashboard() {
                   </div>
                 )}
               </TabsContent>
-              
             </Tabs>
+            
+            {/* Pagination */}
+            {totalBooks > pageSize && (
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <Button 
+                  variant="outline" 
+                  disabled={currentPage === 1}
+                  onClick={() => handleSearch(currentPage - 1)}
+                  data-testid="button-prev-page"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {Math.ceil(totalBooks / pageSize)}
+                </span>
+                <Button 
+                  variant="outline"
+                  disabled={currentPage * pageSize >= totalBooks}
+                  onClick={() => handleSearch(currentPage + 1)}
+                  data-testid="button-next-page"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Right Sidebar */}

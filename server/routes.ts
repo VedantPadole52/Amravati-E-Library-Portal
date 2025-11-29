@@ -247,19 +247,21 @@ export async function registerRoutes(
 
   // ============= BOOK ROUTES =============
   
-  // Get all books (with optional search)
+  // Get all books (with optional search and pagination)
   app.get("/api/books", async (req, res) => {
     try {
-      const { search } = req.query;
+      const { search, page = "1", limit = "20" } = req.query;
+      const pageNum = Math.max(1, parseInt(page as string) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
       
-      let books;
+      let result;
       if (search && typeof search === "string") {
-        books = await storage.searchBooks(search);
+        result = await storage.searchBooks(search, pageNum, limitNum);
       } else {
-        books = await storage.getAllBooks();
+        result = await storage.getAllBooks(pageNum, limitNum);
       }
 
-      res.json({ books });
+      res.json({ books: result.books, total: result.total, page: pageNum, limit: limitNum });
     } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch books", error: error.message });
     }
