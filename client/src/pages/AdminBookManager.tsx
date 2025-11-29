@@ -64,9 +64,9 @@ export default function AdminBookManager() {
   };
 
   const filteredBooks = books.filter(book =>
-    book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    book.isbn?.toLowerCase().includes(searchQuery.toLowerCase())
+    (book.title?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+    (book.author?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+    (book.isbn?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
 
   const handleAddBook = async (e: React.FormEvent) => {
