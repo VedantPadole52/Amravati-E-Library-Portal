@@ -566,6 +566,19 @@ export class DatabaseStorage implements IStorage {
       reviewCount: Number(r.reviewCount || 0),
     }));
   }
+
+  async createNotification(notification: any): Promise<any> {
+    const [newNotif] = await db.insert(notifications).values(notification).returning();
+    return newNotif;
+  }
+
+  async getUnreadNotifications(userId: string): Promise<any[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  }
+
+  async markNotificationAsRead(notifId: number): Promise<void> {
+    await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, notifId));
+  }
 }
 
 export const storage = new DatabaseStorage();

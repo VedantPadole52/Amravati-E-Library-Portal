@@ -45,6 +45,8 @@ export default function CitizenDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
   const [pageSize] = useState(20);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -54,6 +56,9 @@ export default function CitizenDashboard() {
     
     loadData();
     loadBookmarks();
+    
+    // Load notifications
+    fetch("/api/notifications").then(r => r.json()).then(d => setNotifications(d.notifications || [])).catch(() => {});
     
     // Refresh books every 3 seconds to show new admin-added books
     const interval = setInterval(() => {
@@ -232,6 +237,25 @@ export default function CitizenDashboard() {
           {/* Main Content: Book Browser */}
           <div className="lg:col-span-3 space-y-8">
             
+            {/* Notifications Bar */}
+            {notifications.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-bold text-blue-900 mb-2">📢 New Notifications ({notifications.length})</h3>
+                    <div className="space-y-2">
+                      {notifications.slice(0, 3).map((notif: any) => (
+                        <div key={notif.id} className="text-sm text-blue-800">
+                          <strong>{notif.title}:</strong> {notif.message}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={() => setShowNotifications(false)} className="text-blue-600 hover:text-blue-900">✕</button>
+                </div>
+              </div>
+            )}
+
             {/* Search & Filter Bar */}
             <div className="bg-white p-4 rounded shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">

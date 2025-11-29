@@ -1059,6 +1059,56 @@ Create an engaging summary that captures the essence of the book for library use
     });
   });
 
+  // Notifications endpoints
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const notifications = await storage.getUnreadNotifications(req.session.userId!);
+      res.json({ notifications });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch notifications", error: error.message });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.markNotificationAsRead(id);
+      res.json({ message: "Notification marked as read" });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to mark notification as read", error: error.message });
+    }
+  });
+
+  // Admin: Create notification for all users
+  app.post("/api/notifications/broadcast", requireAdmin, async (req, res) => {
+    try {
+      const { type, title, message, bookId } = req.body;
+      const users_data = await storage.getAllUsers();
+      
+      for (const user of users_data) {
+        await storage.createNotification({
+          userId: user.id,
+          type,
+          title,
+          message,
+          bookId: bookId || null,
+        });
+      }
+
+      // Broadcast to WebSocket clients
+      const notifMessage = JSON.stringify({ type: "notification", title, message });
+      wss.clients.forEach((client) => {
+        if (client.readyState === client.OPEN) {
+          client.send(notifMessage);
+        }
+      });
+
+      res.json({ message: "Notification broadcast to all users" });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to broadcast notification", error: error.message });
+    }
+  });
+
   // Broadcast active users count every 5 seconds to all connected clients
   setInterval(async () => {
     if (wss.clients.size > 0) {

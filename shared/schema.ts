@@ -312,3 +312,24 @@ export const achievementsRelations = relations(achievements, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// Notifications Table - Real-time alerts for books and challenges
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'new_book', 'reading_challenge', 'achievement'
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  bookId: integer("book_id").references(() => books.id),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  isRead: true,
+  createdAt: true,
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
