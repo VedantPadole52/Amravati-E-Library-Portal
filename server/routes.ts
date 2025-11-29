@@ -178,6 +178,24 @@ export async function registerRoutes(
     });
   });
 
+  // Update user profile
+  app.patch("/api/auth/update-profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { name, phone } = req.body;
+
+      const updated = await db
+        .update(users)
+        .set({ name, phone })
+        .where(eq(users.id, userId))
+        .returning();
+
+      res.json(updated[0]);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to update profile", error: error.message });
+    }
+  });
+
   // Track user session activity (called on page visit)
   app.post("/api/auth/track-session", requireAuth, async (req, res) => {
     try {

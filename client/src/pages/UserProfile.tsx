@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Flame, 
@@ -11,7 +12,9 @@ import {
   BookmarkPlus, 
   Trophy, 
   Award,
-  ArrowLeft
+  ArrowLeft,
+  Edit,
+  Save
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +26,9 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [readingGoal, setReadingGoal] = useState(50);
   const [showGoalForm, setShowGoalForm] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
 
   useEffect(() => {
     loadProfile();
@@ -46,10 +52,37 @@ export default function UserProfile() {
 
       setProfile({ user, streak, goal, wishlist, achievements });
       setReadingGoal(goal.targetBooks || 50);
+      setEditName(user?.user?.name || "");
+      setEditPhone(user?.user?.phone || "");
     } catch (error) {
       console.error("Failed to load profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateProfile = async () => {
+    try {
+      const response = await fetch("/api/auth/update-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName, phone: editPhone })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Profile updated successfully"
+        });
+        setIsEditingProfile(false);
+        loadProfile();
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update profile"
+      });
     }
   };
 
@@ -112,9 +145,65 @@ export default function UserProfile() {
 
         {/* Header Section */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-8 mb-8">
-          <h1 className="text-3xl font-bold mb-2">📚 My Reading Profile</h1>
-          <p className="text-blue-100">Track your reading journey and achievements</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">📚 My Reading Profile</h1>
+              <p className="text-blue-100">Track your reading journey and achievements</p>
+            </div>
+            <Button
+              variant="outline"
+              className="text-white border-white hover:bg-white/20"
+              onClick={() => setIsEditingProfile(!isEditingProfile)}
+              data-testid="button-edit-profile"
+            >
+              <Edit className="h-4 w-4 mr-2" /> {isEditingProfile ? "Cancel" : "Edit"}
+            </Button>
+          </div>
         </div>
+
+        {/* Edit Profile Section */}
+        {isEditingProfile && (
+          <Card className="mb-8 border-blue-200">
+            <CardHeader>
+              <CardTitle>Edit Profile Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Your name"
+                  data-testid="input-edit-name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Phone</label>
+                <Input
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="Your phone number"
+                  data-testid="input-edit-phone"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  value={profile?.user?.email || ""}
+                  disabled
+                  className="bg-gray-100"
+                />
+              </div>
+              <Button 
+                onClick={updateProfile}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                data-testid="button-save-profile"
+              >
+                <Save className="h-4 w-4 mr-2" /> Save Changes
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">

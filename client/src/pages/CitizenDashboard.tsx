@@ -16,8 +16,10 @@ import {
   Download,
   MoreHorizontal,
   User,
-  ArrowRight
+  ArrowRight,
+  BookOpen as BookOpenIcon
 } from "lucide-react";
+import PDFViewer from "@/components/PDFViewer";
 import { authApi, booksApi, categoriesApi, type Book as BookType, type User as UserType, type UserStats, type Category } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -37,6 +39,9 @@ export default function CitizenDashboard() {
   const [user, setUser] = useState<UserType | null>(null);
   const [stats, setStats] = useState<UserStats>({ booksRead: 0, borrowed: 0, points: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
+  const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -45,7 +50,43 @@ export default function CitizenDashboard() {
     fetch("/api/auth/track-session", { method: "POST" }).catch(() => {});
     
     loadData();
+    loadBookmarks();
   }, []);
+
+  const loadBookmarks = async () => {
+    try {
+      const response = await fetch("/api/user/wishlist");
+      if (response.ok) {
+        const data = await response.json();
+        setBookmarks(new Set(data.bookIds || []));
+      }
+    } catch (error) {
+      console.log("Failed to load bookmarks");
+    }
+  };
+
+  const toggleBookmark = async (bookId: number) => {
+    const newBookmarks = new Set(bookmarks);
+    if (newBookmarks.has(bookId)) {
+      newBookmarks.delete(bookId);
+      toast({
+        title: "Removed from wishlist",
+        description: "Book removed from your reading list"
+      });
+    } else {
+      newBookmarks.add(bookId);
+      toast({
+        title: "Added to wishlist",
+        description: "Book added to your reading list"
+      });
+    }
+    setBookmarks(newBookmarks);
+  };
+
+  const openPDFViewer = (book: BookType) => {
+    setSelectedBook(book);
+    setShowPDFViewer(true);
+  };
 
   const loadData = async () => {
     try {
@@ -239,9 +280,24 @@ export default function CitizenDashboard() {
                             }}
                             data-testid={`img-book-cover-${book.id}`}
                           />
-                          <div className="absolute top-2 right-2">
-                             <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                               <Bookmark className="h-4 w-4 text-gray-600" />
+                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Button 
+                               size="icon" 
+                               variant="secondary" 
+                               className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                               onClick={() => toggleBookmark(book.id)}
+                               data-testid={`button-bookmark-${book.id}`}
+                             >
+                               <Bookmark className={`h-4 w-4 ${bookmarks.has(book.id) ? "fill-blue-500 text-blue-500" : "text-gray-600"}`} />
+                             </Button>
+                             <Button 
+                               size="icon" 
+                               variant="secondary" 
+                               className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-sm"
+                               onClick={() => openPDFViewer(book)}
+                               data-testid={`button-read-book-${book.id}`}
+                             >
+                               <BookOpenIcon className="h-4 w-4 text-gray-600" />
                              </Button>
                           </div>
                         </div>
@@ -253,8 +309,23 @@ export default function CitizenDashboard() {
                           </div>
                           
                           <div className="mt-auto flex gap-2">
-                            <Button size="sm" variant="outline" className="flex-1 text-xs h-8 border-gray-300">Preview</Button>
-                            <Button size="sm" className="flex-1 bg-gray-900 text-white hover:bg-black text-xs h-8">Read</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1 text-xs h-8 border-gray-300"
+                              onClick={() => toggleBookmark(book.id)}
+                              data-testid={`button-wishlist-${book.id}`}
+                            >
+                              {bookmarks.has(book.id) ? "✓ Saved" : "Save"}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="flex-1 bg-gray-900 text-white hover:bg-black text-xs h-8"
+                              onClick={() => openPDFViewer(book)}
+                              data-testid={`button-read-${book.id}`}
+                            >
+                              Read
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -302,10 +373,19 @@ export default function CitizenDashboard() {
                  >
                    <History className="h-3 w-3 mr-2 text-gray-400" /> Reading History
                  </Button>
-                 <Button variant="outline" className="w-full justify-start text-xs h-9 border-gray-200">
-                   <Bookmark className="h-3 w-3 mr-2 text-gray-400" /> My Bookmarks
+                 <Button 
+                   variant="outline" 
+                   className="w-full justify-start text-xs h-9 border-gray-200"
+                   data-testid="button-my-bookmarks"
+                 >
+                   <Bookmark className="h-3 w-3 mr-2 text-gray-400" /> My Bookmarks ({bookmarks.size})
                  </Button>
-                 <Button variant="outline" className="w-full justify-start text-xs h-9 border-gray-200">
+                 <Button 
+                   variant="outline" 
+                   className="w-full justify-start text-xs h-9 border-gray-200"
+                   onClick={() => setLocation("/profile")}
+                   data-testid="button-edit-profile-link"
+                 >
                    <User className="h-3 w-3 mr-2 text-gray-400" /> Edit Profile
                  </Button>
                </div>
@@ -329,6 +409,15 @@ export default function CitizenDashboard() {
 
         </div>
       </main>
+
+      {/* PDF Viewer Modal */}
+      {showPDFViewer && selectedBook && (
+        <PDFViewer
+          title={selectedBook.title}
+          author={selectedBook.author}
+          onClose={() => setShowPDFViewer(false)}
+        />
+      )}
 
       <Footer />
     </div>
