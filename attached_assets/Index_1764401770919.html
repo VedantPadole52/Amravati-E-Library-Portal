@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E-Library Portal | Amravati Municipal Corporation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Merriweather:wght=700&display=swap');
+
+    :root {
+      --gov-blue: #1e3a8a;
+      --gov-orange: #f97316;
+      --bg-light: #f3f4f6;
+      --border-color: #d1d5db;
+    }
+
+    body { font-family: 'Roboto', sans-serif; background-color: var(--bg-light); color: #333; }
+    h1, h2, h3, .gov-font { font-family: 'Merriweather', serif; }
+
+    /* Utility Styles */
+    .top-bar { background-color: #f8f9fa; border-bottom: 1px solid #e5e7eb; font-size: 0.8rem; }
+    .nav-bar { background-color: var(--gov-blue); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    .nav-link:hover { background-color: rgba(255,255,255,0.15); }
+    .gov-card {
+      background: white; border: 1px solid var(--border-color); border-top: 4px solid var(--gov-blue);
+      border-radius: 4px; transition: all 0.2s ease;
+    }
+    .gov-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-top-color: var(--gov-orange); }
+    .btn-gov { background-color: var(--gov-blue); color: white; border-radius: 2px; transition: background-color 0.2s; }
+    .btn-gov:hover { background-color: #172554; }
+    .btn-outline { border: 1px solid var(--gov-blue); color: var(--gov-blue); background: white; border-radius: 2px; transition: background-color 0.2s; }
+    .btn-outline:hover { background-color: #eff6ff; }
+    
+    .modal-backdrop {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 60;
+      background-color: rgba(0, 0, 0, 0.5); opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal-content { transform: scale(0.95); transition: transform 0.3s ease; }
+    .modal-backdrop.open .modal-content { transform: scale(1); }
+
+    .ticker-wrap { overflow: hidden; background-color: #fff7ed; border-bottom: 1px solid #fdba74; height: 40px; display: flex; align-items: center; }
+    .ticker-content { display: inline-block; white-space: nowrap; animation: ticker 40s linear infinite; font-weight: 500; color: #c2410c; }
+    @keyframes ticker { 0% { transform: translate3d(100%, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+    .book-reader { font-family: 'Merriweather', serif; line-height: 1.8; color: #2d2d2d; }
+    .hidden { display: none !important; }
+
+    /* Landing Page Specifics */
+    #landingPage {
+        background-image: linear-gradient(rgba(30, 58, 138, 0.9), rgba(30, 58, 138, 0.8)), url('https://upload.wikimedia.org/wikipedia/commons/2/23/Inside_the_Chhatrapati_Shivaji_Maharaj_Vastu_Sangrahalaya.jpg');
+        background-size: cover;
+        background-position: center;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <div id="landingPage" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded shadow-2xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden min-h-[500px]">
+          
+          <div class="w-full md:w-1/2 bg-gray-50 p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-gray-200">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem" class="h-24 mb-4">
+              <h1 class="text-2xl font-bold text-blue-900 mb-2">Amravati Municipal Corporation</h1>
+              <h2 class="text-xl font-medium text-orange-600 mb-6">E-Library Portal</h2>
+              <p class="text-sm text-gray-500 max-w-xs">Access thousands of NCERT books, Competitive Exam materials, and Historical archives securely.</p>
+              <div class="mt-8 text-xs text-gray-400">
+                  <p>Government of Maharashtra</p>
+                  <p>Department of Education</p>
+              </div>
+          </div>
+
+          <div class="w-full md:w-1/2 p-8 relative">
+              
+              <div id="landingLogin" class="animate-fade-in">
+                  <h3 class="text-2xl font-bold text-gray-800 mb-6">Login</h3>
+                  <form id="landingLoginForm" class="space-y-4">
+                      <div>
+                          <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Email Address</label>
+                          <input id="ll_email" type="email" required class="w-full border border-gray-300 p-2 rounded focus:border-blue-900 focus:outline-none">
+                      </div>
+                      <div>
+                          <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Password</label>
+                          <input id="ll_pass" type="password" required class="w-full border border-gray-300 p-2 rounded focus:border-blue-900 focus:outline-none">
+                      </div>
+                      <button type="submit" class="w-full bg-blue-900 text-white font-bold py-3 rounded hover:bg-blue-800 transition shadow-lg">Access Portal</button>
+                  </form>
+                  <div class="mt-6 text-center text-sm">
+                      <span class="text-gray-600">New User?</span>
+                      <button onclick="toggleLandingAuth('register')" class="text-orange-600 font-bold hover:underline ml-1">Register Here</button>
+                  </div>
+                  <div class="mt-8 p-3 bg-blue-50 text-xs text-blue-800 rounded">
+                      <strong>Demo Credentials:</strong><br>
+                      User: demo@user.com / user123<br>
+                      Admin: admin@amc.edu / admin123
+                  </div>
+              </div>
+
+              <div id="landingRegister" class="hidden animate-fade-in">
+                  <h3 class="text-2xl font-bold text-gray-800 mb-6">Registration</h3>
+                  <form id="landingRegForm" class="space-y-3">
+                      <div>
+                          <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Full Name</label>
+                          <input id="lr_name" required class="w-full border border-gray-300 p-2 rounded">
+                      </div>
+                      <div>
+                          <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
+                          <input id="lr_email" type="email" required class="w-full border border-gray-300 p-2 rounded">
+                      </div>
+                      <div>
+                          <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Phone Number</label>
+                          <input id="lr_phone" type="tel" pattern="[0-9]{10}" title="10 digit mobile number" required class="w-full border border-gray-300 p-2 rounded">
+                      </div>
+                      <div>
+                          <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Create Password</label>
+                          <input id="lr_pass" type="password" required class="w-full border border-gray-300 p-2 rounded">
+                      </div>
+                      <button type="submit" class="w-full bg-orange-600 text-white font-bold py-3 rounded hover:bg-orange-700 transition shadow-lg">Register & Login</button>
+                  </form>
+                  <div class="mt-6 text-center text-sm">
+                      <span class="text-gray-600">Already registered?</span>
+                      <button onclick="toggleLandingAuth('login')" class="text-blue-900 font-bold hover:underline ml-1">Back to Login</button>
+                  </div>
+              </div>
+
+          </div>
+      </div>
+  </div>
+
+  <div id="appContent" class="hidden flex-col min-h-screen">
+
+    <div class="top-bar py-2 px-4 md:px-8 flex justify-between items-center text-gray-600">
+      <div class="flex gap-4 items-center">
+        <span><i class="fas fa-calendar-alt mr-1"></i> <span id="currentDate"></span></span>
+        <span class="hidden md:inline border-l pl-3 border-gray-300">Government of Maharashtra</span>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <div id="userProfileHead" class="flex items-center gap-3 text-xs">
+          <span class="font-medium text-gray-700">Welcome, <span id="welcomeUserHeader" class="font-bold text-blue-900">User</span></span>
+          <button onclick="logout()" class="text-red-600 hover:text-red-800 font-bold ml-1" title="Logout"><i class="fas fa-power-off"></i></button>
+        </div>
+
+        <div class="h-4 border-l border-gray-300"></div>
+
+        <select class="bg-transparent border-none text-xs cursor-pointer hover:text-black focus:ring-0">
+          <option>English</option><option>हिंदी</option><option>मराठी</option>
+        </select>
+      </div>
+    </div>
+
+    <header class="bg-white py-4 border-b-4 border-yellow-500">
+      <div class="container mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
+          <div class="flex flex-col items-center">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="National Emblem" class="h-16 w-auto">
+              <span class="text-[10px] font-bold uppercase mt-1 tracking-wide">Satyameva Jayate</span>
+          </div>
+          <div class="border-l-2 border-gray-300 h-12 mx-2 hidden md:block"></div>
+          <div class="text-center md:text-left">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800 uppercase tracking-tight">E-Library Portal</h1>
+            <p class="text-sm md:text-base text-gray-600 font-medium">Amravati Municipal Corporation</p>
+          </div>
+        </div>
+        <div class="hidden md:flex items-center gap-4">
+           <div class="text-right">
+               <p class="text-xs font-bold text-gray-500">ADMINISTRATION</p>
+               <p class="text-xs text-gray-400">Dept of Education</p>
+           </div>
+           <img src="https://upload.wikimedia.org/wikipedia/en/9/95/Digital_India_logo.svg" alt="Digital India" class="h-12 opacity-80">
+        </div>
+      </div>
+    </header>
+
+    <nav class="nav-bar text-white sticky top-0 z-40">
+      <div class="container mx-auto px-4 md:px-8">
+        <div class="flex flex-wrap items-center justify-between">
+          <button class="md:hidden py-3 px-2" onclick="document.getElementById('mobileMenu').classList.toggle('hidden')"><i class="fas fa-bars text-xl"></i></button>
+
+          <div class="hidden md:flex space-x-1 w-full">
+            <a href="#" onclick="showAllBooks()" class="nav-link px-4 py-3 font-medium text-sm uppercase"><i class="fas fa-home mr-2"></i>Home</a>
+            <a href="#" onclick="filterByCategory('NCERT')" class="nav-link px-4 py-3 font-medium text-sm uppercase">NCERT Books</a>
+            <a href="#" onclick="filterByCategory('Competitive')" class="nav-link px-4 py-3 font-medium text-sm uppercase">Competitive Exams</a>
+          </div>
+        </div>
+      </div>
+      <div id="mobileMenu" class="hidden md:hidden bg-blue-900 pb-4 px-4 border-t border-blue-800">
+          <a href="#" onclick="showAllBooks()" class="block py-2 text-sm border-b border-blue-800">Home</a>
+      </div>
+    </nav>
+
+    <div class="ticker-wrap">
+        <div class="container mx-auto flex items-center px-4">
+            <div class="bg-orange-600 text-white px-3 py-1 text-xs font-bold uppercase mr-4 rounded-sm z-10 shadow">Latest Notices</div>
+            <div id="tickerContainer" class="ticker-content w-full text-sm text-gray-800"></div>
+        </div>
+    </div>
+
+    <main class="flex-grow container mx-auto px-4 md:px-8 py-8">
+      
+      <div class="bg-white p-4 rounded shadow-sm border border-gray-200 mb-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div class="flex-1 w-full md:w-auto">
+              <div class="flex">
+                  <input id="searchTop" oninput="applySortFilter()" type="search" placeholder="Search Books by Title, Author, Category, or Subcategory..." class="w-full border border-gray-300 px-3 py-2 text-sm rounded-l focus:outline-none focus:border-blue-800">
+                  <button onclick="applySortFilter()" class="bg-blue-900 text-white px-4 py-2 rounded-r hover:bg-blue-800"><i class="fas fa-search"></i></button>
+              </div>
+          </div>
+          
+          <div class="flex gap-4">
+              <select id="sortSelect" onchange="applySortFilter()" class="border border-gray-300 px-3 py-2 text-sm rounded">
+                  <option value="title">Title (A-Z)</option>
+                  <option value="author">Author</option>
+                  <option value="category">Category</option>
+              </select>
+              <div class="flex">
+                  <button onclick="changeView('grid')" id="gridBtn" class="px-3 py-2 border rounded-l bg-gray-100"><i class="fas fa-th-large"></i></button>
+                  <button onclick="changeView('list')" id="listBtn" class="px-3 py-2 border rounded-r"><i class="fas fa-list"></i></button>
+              </div>
+          </div>
+
+          <div id="adminPanelBtn" class="hidden flex gap-2">
+              <button onclick="showAddBookModal()" class="bg-blue-800 text-white px-3 py-2 rounded text-sm hover:bg-blue-900 shadow"><i class="fas fa-plus-circle mr-1"></i> Add Book</button>
+              <button onclick="showNewsManagerModal()" class="bg-orange-600 text-white px-3 py-2 rounded text-sm hover:bg-orange-700 shadow"><i class="fas fa-bullhorn mr-1"></i> Notices</button>
+              <button onclick="showUserListModal()" class="bg-green-700 text-white px-3 py-2 rounded text-sm hover:bg-green-800 shadow"><i class="fas fa-users mr-1"></i> Users</button>
+              <button onclick="showAnalyticsModal()" class="bg-purple-700 text-white px-3 py-2 rounded text-sm hover:bg-purple-800 shadow"><i class="fas fa-chart-bar mr-1"></i> Analytics</button>
+          </div>
+      </div>
+
+      <div id="mainCategoryFilters" class="mb-4 flex flex-wrap gap-2 justify-center md:justify-start border-b pb-2">
+          </div>
+      
+      <div id="subcategoryFilters" class="mb-8 flex flex-wrap gap-2 justify-center md:justify-start pt-2 hidden">
+          </div>
+      
+      <div id="booksArea" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+      
+      <div id="noBooks" class="hidden text-center py-16 bg-white border border-dashed border-gray-300 rounded">
+          <h3 class="text-xl font-bold text-gray-600">No Records Found</h3>
+          <button onclick="showAllBooks()" class="mt-4 text-blue-600 hover:underline">View All Documents</button>
+      </div>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white border-t-4 border-orange-500 mt-auto">
+      <div class="container mx-auto px-4 py-6 text-center text-sm">
+          &copy; 2025 Amravati Municipal Corporation E-Library. All Rights Reserved.
+      </div>
+    </footer>
+
+  </div> <div id="modalRoot"></div>
+
+  <script>
+    /* ---------------- DATA & INIT ---------------- */
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN')
+
+    const $ = (id) => document.getElementById(id)
+    const lsGet = (key, fallback) => { try { const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch(e){return fallback} }
+    const lsSet = (key, value) => { localStorage.setItem(key, JSON.stringify(value)) }
+    
+    const ALL_CATEGORIES = {
+        'NCERT': ['1st Standard', '2nd Standard', '3rd Standard', '4th Standard', '5th Standard', '6th Standard', '7th Standard', '8th Standard', '9th Standard', '10th Standard'],
+        'Competitive': ['Banking', 'MPSC', 'UPSC', 'Police Exam', 'Other'],
+        'Stories': ['Fictional', 'Non-Fictional', 'Folklore'],
+        'Historical': [], 'Biography': [], 'Fiction': [], 'Reference': [], 'Other': []
+    }
+    const BOOK_CATEGORIES = Object.keys(ALL_CATEGORIES)
+    const FILTER_CATEGORIES = ['NCERT', 'Competitive', 'Stories', 'Historical']
+
+    const DEMO_BOOKS = [
+      { id: 101, title: 'Mathematics Class X', author: 'NCERT Panel', category: 'NCERT', subcategory: '10th Standard', description: 'Standard textbook for Class 10.', cover: '📘', pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' },
+      { id: 102, title: 'Indian Polity', author: 'M. Laxmikanth', category: 'Competitive', subcategory: 'UPSC', description: 'Essential for UPSC.', cover: '📕', pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' },
+      { id: 103, title: 'The Old Man and the Sea', author: 'Ernest Hemingway', category: 'Stories', subcategory: 'Fictional', description: 'A classic short novel.', cover: '📔', pdfUrl: '' },
+      { id: 104, title: 'History of Modern India', author: 'Bipin Chandra', category: 'Historical', subcategory: '', description: 'Detailed history from the 18th century to independence.', cover: '📜', pdfUrl: '' }
+    ]
+    const DEFAULT_NEWS = [ "New NCERT books for Class 10 added", "Admit cards for State Service Prelims available", "Reading Day celebrated on 15th Oct" ]
+    const DEFAULT_USERS = {
+        'demo@user.com': { name: 'Citizen User', phone: '9876543210', password: 'user123', role: 'user' },
+        'admin@amc.edu': { name: 'Library Admin', phone: '9988776655', password: 'admin123', role: 'admin' }
+    }
+    
+    // Activity Log for Analytics: [ { date: 'YYYY-MM-DD', bookId: 101, action: 'read' }, ... ]
+    const DEMO_ACTIVITY = [
+        {date: new Date().toISOString().split('T')[0], action: 'read'},
+        {date: new Date().toISOString().split('T')[0], action: 'read'},
+        {date: new Date(Date.now() - 86400000).toISOString().split('T')[0], action: 'read'} // yesterday
+    ]
+
+    let books = lsGet('el_books', DEMO_BOOKS)
+    let newsItems = lsGet('el_news', DEFAULT_NEWS)
+    let users = lsGet('el_users', DEFAULT_USERS)
+    let activityLog = lsGet('el_activity', DEMO_ACTIVITY)
+    
+    let currentUserEmail = lsGet('el_current', null)
+    let currentUser = currentUserEmail ? users[currentUserEmail] : null
+    let currentView = lsGet('el_view', 'grid')
+    let filteredBooks = [...books]
+
+    /* ---------------- AUTH & LANDING LOGIC ---------------- */
+    
+    function checkSession() {
+        if(currentUser) {
+            $('landingPage').classList.add('hidden')
+            $('appContent').classList.remove('hidden')
+            $('welcomeUserHeader').textContent = currentUser.name
+            $('adminPanelBtn').classList.toggle('hidden', currentUser.role !== 'admin')
+            renderBooks()
+        } else {
+            $('landingPage').classList.remove('hidden')
+            $('appContent').classList.add('hidden')
+        }
+    }
+
+    function toggleLandingAuth(type) {
+        if(type === 'register') {
+            $('landingLogin').classList.add('hidden')
+            $('landingRegister').classList.remove('hidden')
+        } else {
+            $('landingRegister').classList.add('hidden')
+            $('landingLogin').classList.remove('hidden')
+        }
+    }
+
+    // Landing Login Submit
+    $('landingLoginForm').addEventListener('submit', e => {
+        e.preventDefault()
+        const email = $('ll_email').value
+        const pass = $('ll_pass').value
+        const u = users[email]
+        if(u && u.password === pass) {
+            currentUserEmail = email; lsSet('el_current', email); currentUser = u
+            checkSession()
+        } else notify('Invalid Credentials', 'error')
+    })
+
+    // Landing Register Submit
+    $('landingRegForm').addEventListener('submit', e => {
+        e.preventDefault()
+        const email = $('lr_email').value.trim()
+        if(users[email]) { notify('User already exists', 'warning'); return }
+        
+        users[email] = { 
+            name: $('lr_name').value, 
+            phone: $('lr_phone').value, 
+            password: $('lr_pass').value, 
+            role: 'user' 
+        }
+        lsSet('el_users', users); currentUserEmail = email; currentUser = users[email]; lsSet('el_current', email)
+        checkSession()
+        notify('Registration Successful. Welcome!', 'success')
+    })
+
+    const logout = () => { lsSet('el_current',null); location.reload() }
+
+    /* ---------------- HELPERS ---------------- */
+
+    function showModal(html, w='max-w-2xl') {
+        const root=$('modalRoot')
+        const d=document.createElement('div')
+        d.className='modal-backdrop'
+        d.innerHTML=`<div class="modal-content w-full ${w} m-4 shadow-2xl rounded overflow-hidden relative">${html}</div>`
+        root.innerHTML=''
+        root.appendChild(d) 
+        setTimeout(()=>d.classList.add('open'),10)
+    }
+    function closeModal(){ document.querySelector('.modal-backdrop')?.classList.remove('open'); setTimeout(()=>$('modalRoot').innerHTML='',300) }
+    function notify(m,t){ 
+        const colors = { error: 'bg-red-600', warning: 'bg-orange-600', info: 'bg-blue-600', success: 'bg-green-700' }
+        const d=document.createElement('div')
+        d.className=`fixed bottom-5 right-5 text-white px-6 py-3 rounded shadow z-50 ${colors[t]||'bg-green-700'}`
+        d.innerHTML=m
+        document.body.appendChild(d) 
+        setTimeout(()=>d.remove(),3000)
+    }
+    const changeView = (v) => { currentView=v; lsSet('el_view',v); renderBooks() }
+
+    function logActivity(action, bookId) {
+        const today = new Date().toISOString().split('T')[0]
+        activityLog.push({ date: today, action: action, bookId: bookId })
+        lsSet('el_activity', activityLog)
+    }
+
+    /* ---------------- FILTERING ---------------- */
+    
+    function applySortFilter() {
+        const q = $('searchTop').value.toLowerCase()
+        const sortKey = $('sortSelect').value
+        
+        filteredBooks = books.filter(b => 
+            b.title.toLowerCase().includes(q) || 
+            b.author.toLowerCase().includes(q) || 
+            b.category.toLowerCase().includes(q) ||
+            (b.subcategory && b.subcategory.toLowerCase().includes(q))
+        )
+        
+        if(sortKey === 'title') filteredBooks.sort((a,b)=>a.title.localeCompare(b.title))
+        if(sortKey === 'author') filteredBooks.sort((a,b)=>a.author.localeCompare(b.author))
+        if(sortKey === 'category') filteredBooks.sort((a,b)=>a.category.localeCompare(b.category))
+        renderBooks()
+    }
+    
+    function showAllBooks() { $('searchTop').value=''; resetSubcategoryFilters(); applySortFilter() }
+    function filterByCategory(c) { $('searchTop').value=c; applySortFilter() }
+
+    /* ---------------- RENDERING ---------------- */
+
+    function renderMainCategoryFilters() {
+        const container = $('mainCategoryFilters')
+        container.innerHTML = ''
+        const allButton = document.createElement('button')
+        allButton.textContent = 'View All'
+        allButton.className = 'px-4 py-1 text-sm rounded-full border border-gray-400 text-gray-700 bg-gray-100 hover:bg-gray-200 transition font-bold'
+        allButton.setAttribute('onclick', 'showAllBooks()')
+        container.appendChild(allButton)
+
+        FILTER_CATEGORIES.forEach(cat => {
+            const button = document.createElement('button')
+            button.textContent = cat
+            button.className = 'px-4 py-1 text-sm rounded-full border border-blue-500 text-blue-800 bg-blue-50 hover:bg-blue-100 transition'
+            button.setAttribute('onclick', `filterByCategory('${cat}'); renderSubcategoryFilters('${cat}');`)
+            container.appendChild(button)
+        })
+    }
+
+    function renderSubcategoryFilters(mainCategory) {
+        const container = $('subcategoryFilters')
+        const subcategories = ALL_CATEGORIES[mainCategory] || []
+        container.innerHTML = ''
+        if (subcategories.length === 0) { container.classList.add('hidden'); return }
+        container.classList.remove('hidden')
+        container.innerHTML += `<span class="text-sm font-bold text-gray-500 mr-2">${mainCategory} Subcategories:</span>`
+
+        subcategories.forEach(sub => {
+            const button = document.createElement('button')
+            button.textContent = sub
+            button.className = 'px-4 py-1 text-xs rounded-full border border-orange-500 text-orange-700 bg-orange-50 hover:bg-orange-100 transition'
+            button.setAttribute('onclick', `filterByCategory('${sub}')`)
+            container.appendChild(button)
+        })
+    }
+    function resetSubcategoryFilters() { $('subcategoryFilters').classList.add('hidden'); $('subcategoryFilters').innerHTML = '' }
+
+    function renderBooks() {
+      const area = $('booksArea')
+      area.innerHTML = ''
+      if (!filteredBooks.length) { $('noBooks').classList.remove('hidden'); return }
+      $('noBooks').classList.add('hidden')
+      const isAdmin = currentUser && currentUser.role === 'admin'
+
+      const createCard = (b) => {
+          const deleteBtn = isAdmin ? `<button onclick="deleteBook(${b.id})" class="text-red-600 hover:text-red-800 ml-2" title="Delete Book"><i class="fas fa-trash-alt"></i></button>` : ''
+          const categoryText = b.subcategory ? `${b.category} / ${b.subcategory}` : b.category
+
+          if(currentView === 'grid') {
+              return `
+                <div class="gov-card p-4 flex flex-col h-full relative group">
+                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">${deleteBtn}</div>
+                    <div class="text-4xl mb-2">${b.cover}</div>
+                    <span class="text-xs font-bold text-gray-500 uppercase">${categoryText}</span>
+                    <h3 class="text-lg font-bold text-blue-900 mb-1">${b.title}</h3>
+                    <p class="text-sm text-gray-600 mb-2">${b.author}</p>
+                    <div class="mt-auto pt-3 border-t flex gap-2">
+                        <button onclick="viewBook(${b.id})" class="flex-1 btn-gov py-1 text-sm"><i class="fas fa-eye mr-1"></i> View</button>
+                        <button onclick="downloadBook(${b.id})" class="flex-1 btn-outline py-1 text-sm"><i class="fas fa-download mr-1"></i> Download</button>
+                    </div>
+                </div>`
+          } else {
+              return `
+                <div class="gov-card p-4 flex items-center gap-4">
+                    <div class="text-3xl">${b.cover}</div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-blue-900">${b.title}</h3>
+                        <p class="text-sm">${b.author} | ${categoryText}</p>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <button onclick="viewBook(${b.id})" class="btn-gov px-4 py-1 text-sm">View</button>
+                        <button onclick="downloadBook(${b.id})" class="btn-outline px-4 py-1 text-sm"><i class="fas fa-download mr-1"></i> Download</button>
+                        ${deleteBtn}
+                    </div>
+                </div>`
+          }
+      }
+      area.className = currentView === 'grid' ? 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6' : 'flex flex-col gap-3'
+      area.innerHTML = filteredBooks.map(createCard).join('')
+    }
+    
+    function deleteBook(id) {
+        if(!confirm("Delete this book?")) return
+        books = books.filter(b => b.id !== id)
+        lsSet('el_books', books); filteredBooks = [...books]; renderBooks(); notify('Book Deleted', 'error')
+    }
+
+    function downloadBook(id) {
+        logActivity('download', id) // Track Activity
+        const b = books.find(x => x.id === id)
+        if (!b.pdfUrl || b.pdfUrl.trim() === '') { notify('No file available.', 'warning'); return }
+        
+        if (b.pdfUrl.startsWith('SIMULATED_UPLOAD:')) {
+            notify(`Simulating download for: ${b.pdfUrl.split(':')[1]}`, 'info'); return 
+        }
+        const a = document.createElement('a'); a.href = b.pdfUrl; a.download = b.title + '.pdf'; a.target = '_blank'
+        document.body.appendChild(a); a.click(); document.body.removeChild(a)
+        notify('Download Started', 'success')
+    }
+
+    function viewBook(id) {
+        logActivity('read', id) // Track Activity
+        const b = books.find(x => x.id === id)
+        let content = ''
+        
+        if (!b.pdfUrl || b.pdfUrl.trim() === '') {
+             content = `<div class="p-8 text-center text-gray-500">Preview not available.<br><br>${b.description}</div>`
+        } else if (b.pdfUrl.startsWith('SIMULATED_UPLOAD:')) {
+            content = `<div class="p-8 text-center"><h1 class="text-2xl font-bold">File: ${b.pdfUrl.split(':')[1]}</h1><p>Simulated Viewer</p></div>`
+        } else {
+            content = `<iframe src="${b.pdfUrl}" class="w-full h-full border-0"></iframe>`
+        }
+        showModal(`
+            <div class="flex flex-col h-[90vh]">
+                <div class="bg-blue-900 text-white p-3 flex justify-between items-center"><span class="font-bold">${b.title}</span><button onclick="closeModal()" class="text-xl"><i class="fas fa-times"></i></button></div>
+                <div class="flex-grow overflow-hidden relative">${content}</div>
+            </div>
+        `, 'max-w-6xl')
+    }
+
+    /* ---------------- ADMIN: ANALYTICS GRAPH ---------------- */
+
+    function showAnalyticsModal() {
+        if(!currentUser || currentUser.role !== 'admin') return
+
+        // Process Data for Chart
+        const currentMonth = new Date().getMonth()
+        const currentYear = new Date().getFullYear()
+        
+        // Create an array of days in current month (1-30/31)
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+        const labels = Array.from({length: daysInMonth}, (_, i) => i + 1)
+        const dataPoints = new Array(daysInMonth).fill(0)
+
+        // Filter logs for this month/year and 'read' action
+        activityLog.forEach(log => {
+            const d = new Date(log.date)
+            if(d.getMonth() === currentMonth && d.getFullYear() === currentYear && log.action === 'read') {
+                const day = d.getDate()
+                dataPoints[day - 1]++
+            }
+        })
+
+        const monthName = new Date().toLocaleString('default', { month: 'long' })
+
+        showModal(`
+            <div class="bg-white p-6">
+                <h3 class="text-xl font-bold text-purple-700 mb-4 border-b pb-2"><i class="fas fa-chart-line"></i> Reading Activity: ${monthName} ${currentYear}</h3>
+                <div class="h-64 md:h-80 w-full">
+                    <canvas id="readsChart"></canvas>
+                </div>
+                <div class="mt-4 text-center text-xs text-gray-500">
+                    Total Reads this Month: <strong>${dataPoints.reduce((a,b)=>a+b, 0)}</strong>
+                </div>
+                <button onclick="closeModal()" class="mt-4 w-full border py-2 rounded text-sm text-gray-600">Close</button>
+            </div>
+        `, 'max-w-3xl')
+
+        // Initialize Chart.js
+        setTimeout(() => {
+            const ctx = document.getElementById('readsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Books Read/Opened',
+                        data: dataPoints,
+                        borderColor: '#7e22ce', // Purple
+                        backgroundColor: 'rgba(126, 34, 206, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { title: { display: true, text: 'Day of Month' } }
+                    }
+                }
+            });
+        }, 100)
+    }
+
+    /* ---------------- ADMIN: USER LIST ---------------- */
+
+    function showUserListModal() {
+        if(!currentUser || currentUser.role !== 'admin') return
+        const userRows = Object.entries(users).map(([email, u], index) => `
+            <tr class="border-b hover:bg-gray-50 text-sm">
+                <td class="p-2">${index + 1}</td>
+                <td class="p-2 font-medium">${u.name}</td>
+                <td class="p-2">${email}</td>
+                <td class="p-2 text-blue-700 font-mono">${u.phone || '-'}</td>
+                <td class="p-2 uppercase text-xs font-bold ${u.role==='admin'?'text-red-600':'text-green-600'}">${u.role}</td>
+            </tr>
+        `).join('')
+        showModal(`
+            <div class="bg-white p-6">
+                <div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="text-xl font-bold text-green-700">Registered Users</h3><div class="text-xs text-gray-500">Total: ${Object.keys(users).length}</div></div>
+                <div class="max-h-[60vh] overflow-y-auto border rounded"><table class="w-full text-left"><thead class="bg-gray-100 text-xs font-bold text-gray-600 uppercase sticky top-0"><tr><th class="p-2">#</th><th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Phone</th><th class="p-2">Role</th></tr></thead><tbody>${userRows}</tbody></table></div>
+                <button onclick="closeModal()" class="mt-4 w-full border py-2 rounded text-sm text-gray-600">Close Panel</button>
+            </div>
+        `, 'max-w-3xl')
+    }
+
+    /* ---------------- ADMIN: NEWS MANAGER ---------------- */
+
+    function showNewsManagerModal() {
+        if(!currentUser || currentUser.role !== 'admin') return
+        const listHtml = newsItems.map((item, idx) => `<div class="flex justify-between items-center bg-gray-50 border p-2 mb-2 rounded"><span class="text-sm truncate mr-2">${item}</span><button onclick="removeNewsItem(${idx})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button></div>`).join('')
+        showModal(`
+            <div class="bg-white p-6">
+                <h3 class="text-xl font-bold text-orange-600 mb-4 border-b pb-2">Manage Notices</h3>
+                <form id="newsForm" class="flex gap-2 mb-4"><input id="newNewsInput" required class="flex-1 border p-2 rounded text-sm" placeholder="Notice text..."><button type="submit" class="bg-blue-900 text-white px-4 py-2 rounded text-sm">Add</button></form>
+                <div class="max-h-60 overflow-y-auto">${newsItems.length ? listHtml : '<p class="text-sm text-gray-400">No active notices.</p>'}</div>
+                <button onclick="closeModal()" class="mt-4 w-full border py-2 rounded text-sm text-gray-600">Close</button>
+            </div>`, 'max-w-lg')
+        $('newsForm').addEventListener('submit', (e) => { e.preventDefault(); newsItems.push($('newNewsInput').value.trim()); lsSet('el_news', newsItems); renderNews(); closeModal(); setTimeout(showNewsManagerModal, 100); notify('Notice Added', 'success') })
+    }
+    function removeNewsItem(idx) { newsItems.splice(idx, 1); lsSet('el_news', newsItems); renderNews(); closeModal(); setTimeout(showNewsManagerModal, 100); }
+
+    function renderNews() { $('tickerContainer').innerHTML = newsItems.length ? newsItems.join(" &nbsp;&bull;&nbsp; ") : "Welcome to Amravati E-Library Portal" }
+    
+    /* ---------------- FIXED ADD BOOK FUNCTIONALITY ---------------- */
+
+    // 1. Helper to generate category dropdown options
+    const generateCategoryOptions = (selected = '') => {
+        let opts = '<option value="">Select Category</option>';
+        BOOK_CATEGORIES.forEach(c => {
+            opts += `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`;
+        });
+        return opts;
+    };
+
+    // 2. Helper to handle subcategory changes
+    function updateSubcategoryDropdown(cat) {
+        const subs = ALL_CATEGORIES[cat] || [];
+        const subGroup = $('subcategoryInputGroup');
+        const subSelect = $('asc');
+        
+        if (subs.length > 0) {
+            subGroup.classList.remove('hidden');
+            subSelect.removeAttribute('disabled');
+            subSelect.innerHTML = '<option value="">Select Subcategory</option>' + 
+                subs.map(s => `<option value="${s}">${s}</option>`).join('');
+        } else {
+            subGroup.classList.add('hidden');
+            subSelect.setAttribute('disabled', 'true');
+            subSelect.innerHTML = '';
+        }
+    }
+
+    // 3. Helper to switch between File Upload and URL input
+    function toggleInputMethod(type) {
+        const fileGroup = $('fileInputGroup');
+        const urlGroup = $('urlInputGroup');
+        const btnFile = $('toggleFile');
+        const btnUrl = $('toggleUrl');
+
+        if (!fileGroup || !urlGroup) return; 
+
+        if (type === 'file') {
+            fileGroup.classList.remove('hidden');
+            urlGroup.classList.add('hidden');
+            btnFile.className = 'flex-1 py-2 text-sm bg-blue-100 text-blue-900 font-bold transition';
+            btnUrl.className = 'flex-1 py-2 text-sm bg-gray-100 text-gray-600 transition hover:bg-gray-200';
+            $('apFile').setAttribute('required', 'true');
+            $('apUrl').removeAttribute('required');
+        } else {
+            fileGroup.classList.add('hidden');
+            urlGroup.classList.remove('hidden');
+            btnFile.className = 'flex-1 py-2 text-sm bg-gray-100 text-gray-600 transition hover:bg-gray-200';
+            btnUrl.className = 'flex-1 py-2 text-sm bg-blue-100 text-blue-900 font-bold transition';
+            $('apFile').removeAttribute('required');
+            $('apUrl').setAttribute('required', 'true');
+        }
+    }
+
+    // 4. Main Show Modal Function
+    function showAddBookModal() {
+        const catOptions = generateCategoryOptions('');
+
+        const modalHtml = `
+            <div class="bg-white p-6">
+                <h3 class="text-lg font-bold mb-4 text-blue-900 border-b pb-2">Add New Book to Library</h3>
+                <form id="addForm" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Book Title</label>
+                        <input id="at" placeholder="e.g. Mathematics Class X" required class="w-full border p-2 rounded text-sm focus:border-blue-900 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Author / Publisher</label>
+                        <input id="aa" placeholder="e.g. NCERT Panel" required class="w-full border p-2 rounded text-sm focus:border-blue-900 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                        <select id="ac" onchange="updateSubcategoryDropdown(this.value)" required class="w-full border p-2 rounded text-sm bg-white">
+                            ${catOptions}
+                        </select>
+                    </div>
+                    <div id="subcategoryInputGroup" class="hidden">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Subcategory</label>
+                        <select id="asc" class="w-full border p-2 rounded text-sm bg-white" disabled></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                        <textarea id="ad" rows="2" placeholder="Brief summary of the book..." class="w-full border p-2 rounded text-sm focus:border-blue-900 focus:outline-none"></textarea>
+                    </div>
+                    <div class="pt-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Resource Source</label>
+                        <div class="flex border rounded-md overflow-hidden cursor-pointer">
+                            <div id="toggleFile" onclick="toggleInputMethod('file')" class="flex-1 py-2 text-center text-sm">Upload PDF</div>
+                            <div id="toggleUrl" onclick="toggleInputMethod('url')" class="flex-1 py-2 text-center text-sm border-l">External URL</div>
+                        </div>
+                    </div>
+                    <div id="fileInputGroup" class="pt-2">
+                        <input id="apFile" type="file" accept="application/pdf" class="w-full border p-2 text-sm bg-gray-50 rounded">
+                        <p class="text-[10px] text-gray-500 mt-1">Accepts .pdf files only.</p>
+                    </div>
+                    <div id="urlInputGroup" class="hidden pt-2">
+                        <input id="apUrl" type="url" placeholder="https://example.com/book.pdf" class="w-full border p-2 text-sm rounded">
+                    </div>
+                    <button type="submit" class="w-full btn-gov py-2 mt-4 font-bold shadow-md">Save Record</button>
+                </form>
+                <button onclick="closeModal()" class="w-full text-center text-xs text-gray-400 mt-2 hover:text-gray-600">Cancel</button>
+            </div>
+        `;
+
+        showModal(modalHtml, 'max-w-md');
+
+        setTimeout(() => { toggleInputMethod('file'); }, 50);
+
+        $('addForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const isFileMode = !$('fileInputGroup').classList.contains('hidden');
+            let pdfSource = '';
+
+            if (isFileMode) {
+                const fileInput = $('apFile');
+                if (fileInput.files.length > 0) {
+                    pdfSource = `SIMULATED_UPLOAD:${fileInput.files[0].name}`;
+                } else {
+                    notify('Please select a PDF file.', 'error');
+                    return;
+                }
+            } else {
+                pdfSource = $('apUrl').value.trim();
+            }
+
+            const newBook = {
+                id: Date.now(),
+                title: $('at').value,
+                author: $('aa').value,
+                category: $('ac').value,
+                subcategory: $('asc').value || '',
+                description: $('ad').value,
+                cover: '📘',
+                pdfUrl: pdfSource
+            };
+
+            books.push(newBook);
+            lsSet('el_books', books);
+            filteredBooks = [...books];
+            renderBooks();
+            closeModal();
+            notify('New Book Added Successfully!', 'success');
+        });
+    }
+
+    /* ---------------- INIT ---------------- */
+    renderNews()
+    renderMainCategoryFilters()
+    checkSession()
+  </script>
+</body>
+</html>
