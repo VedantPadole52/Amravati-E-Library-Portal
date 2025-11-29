@@ -22,23 +22,37 @@ interface ExtendedReadingHistory extends ReadingHistoryType {
 
 export default function ReadingHistory() {
   const [history, setHistory] = useState<ExtendedReadingHistory[]>([]);
+  const [bookmarkCount, setBookmarkCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
 
   useEffect(() => {
     loadHistory();
+    // Refresh history every 5 seconds for real-time updates
+    const interval = setInterval(loadHistory, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadHistory = async () => {
     try {
-      const data = await readingHistoryApi.getAll();
-      setHistory(data.history);
+      const [historyRes, wishlistRes] = await Promise.all([
+        fetch("/api/reading-history"),
+        fetch("/api/user/wishlist")
+      ]);
+      
+      if (historyRes.ok && wishlistRes.ok) {
+        const historyData = await historyRes.json();
+        const wishlistData = await wishlistRes.json();
+        
+        setHistory(historyData.history || []);
+        setBookmarkCount(wishlistData.count || 0);
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to load reading history",
+        description: "Failed to load reading history",
       });
     } finally {
       setIsLoading(false);
@@ -128,8 +142,9 @@ export default function ReadingHistory() {
             variant={activeTab === "bookmarked" ? "default" : "outline"} 
             onClick={() => setActiveTab("bookmarked")}
             className={activeTab === "bookmarked" ? "bg-[#1e3a8a]" : ""}
+            data-testid="button-bookmarked-tab"
           >
-            <Bookmark className="h-4 w-4 mr-2" /> Bookmarked ({bookmarkedBooks.length})
+            <Bookmark className="h-4 w-4 mr-2" /> Bookmarked ({bookmarkCount})
           </Button>
         </div>
 
@@ -158,28 +173,32 @@ export default function ReadingHistory() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-bold text-gray-800 line-clamp-1" data-testid={`text-book-title-${item.bookId}`}>Book #{item.bookId}</h3>
+                            <h3 className="text-lg font-bold text-gray-800 line-clamp-1" data-testid={`text-book-title-${item.bookId}`}>
+                              {item.book?.title || `Book #${item.bookId}`}
+                            </h3>
                             {item.isBookmarked && (
-                              <Bookmark className="h-4 w-4 text-[#f97316] fill-current" />
+                              <Bookmark className="h-4 w-4 text-[#f97316] fill-current" data-testid={`icon-bookmarked-${item.bookId}`} />
                             )}
                           </div>
-                          <p className="text-sm text-gray-500 mb-3">Last read: {new Date(item.lastAccessedAt).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-500 mb-1">{item.book?.author || "Unknown Author"}</p>
+                          <p className="text-xs text-gray-400 mb-3">Last read: {new Date(item.lastAccessedAt).toLocaleDateString()}</p>
 
                           {/* Progress Bar */}
-                          {!item.completedAt && item.progress !== null && (
-                            <div className="mb-3">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-xs font-medium text-gray-600">Reading Progress</span>
-                                <span className="text-xs font-bold text-[#1e3a8a]">{Math.round(item.progress)}%</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-[#1e3a8a] h-2 rounded-full transition-all"
-                                  style={{ width: `${item.progress}%` }}
-                                ></div>
-                              </div>
+                          <div className="mb-3">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-medium text-gray-600">Reading Progress</span>
+                              <span className="text-xs font-bold text-[#1e3a8a]" data-testid={`text-progress-${item.bookId}`}>
+                                {Math.round(item.progress || 0)}%
+                              </span>
                             </div>
-                          )}
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-[#1e3a8a] h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${Math.min(100, item.progress || 0)}%` }}
+                                data-testid={`progress-bar-${item.bookId}`}
+                              />
+                            </div>
+                          </div>
 
                           {/* Status Badges */}
                           <div className="flex gap-2 flex-wrap">
@@ -196,9 +215,13 @@ export default function ReadingHistory() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-2">
-                          <Button size="sm" className="bg-[#1e3a8a] hover:bg-[#172554]">
-                            Continue Reading
+                        <div className="flex flex-col gap-2">
+                          <Button 
+                            size="sm" 
+                            className="bg-[#1e3a8a] hover:bg-[#172554] text-xs"
+                            data-testid={`button-continue-${item.bookId}`}
+                          >
+                            <BookOpen className="h-3 w-3 mr-1" /> Read
                           </Button>
                           <Button 
                             size="sm" 
