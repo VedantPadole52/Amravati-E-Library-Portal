@@ -22,8 +22,12 @@ export default function PrintableReports() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Extract report type from URL query parameter
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("type") || "system";
+    setReportType(type);
     loadReportData();
-  }, [reportType]);
+  }, []);
 
   const loadReportData = async () => {
     try {
@@ -60,9 +64,19 @@ export default function PrintableReports() {
     window.print();
   };
 
+  const getReportTitle = () => {
+    const titles: Record<string, string> = {
+      "system": "System Overview Report",
+      "category-details": "Category Statistics Report",
+      "user-activity": "User Activity Report",
+      "circulation": "Book Circulation Report"
+    };
+    return titles[reportType] || "System Overview Report";
+  };
+
   const renderSystemReport = () => (
     <div className="space-y-6 print:space-y-4">
-      <h2 className="text-2xl font-bold print:text-xl">System Overview Report</h2>
+      <h2 className="text-2xl font-bold print:text-xl">{getReportTitle()}</h2>
       <p className="text-gray-600 print:text-gray-700">Generated: {new Date().toLocaleString()}</p>
       
       <div className="grid grid-cols-2 gap-4 print:grid-cols-2 print:gap-2">
@@ -186,7 +200,10 @@ export default function PrintableReports() {
               <h1 className="text-4xl font-bold text-blue-600 print:text-2xl">Amravati E-Library</h1>
               <p className="text-gray-600 print:text-sm">Library Statistics Report</p>
             </div>
-            {renderSystemReport()}
+            {reportType === "system" && renderSystemReport()}
+            {reportType === "category-details" && renderSystemReport()}
+            {reportType === "user-activity" && renderSystemReport()}
+            {reportType === "circulation" && renderSystemReport()}
             <div className="mt-12 pt-6 border-t text-center text-gray-500 text-sm print:mt-8 print:pt-4">
               © Amravati Municipal Corporation - E-Library Portal
             </div>
