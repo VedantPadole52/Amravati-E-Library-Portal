@@ -5,8 +5,8 @@ import { storage } from "./storage";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import { pool } from "./db";
-import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema } from "@shared/schema";
+import { pool, db } from "./db";
+import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema, activeSessions } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { WebSocketServer } from "ws";
 import multer, { type Multer } from "multer";
@@ -14,6 +14,7 @@ import path from "path";
 import fs from "fs";
 import PDFDocument from "pdfkit";
 import XLSX from "xlsx";
+import { eq } from "drizzle-orm";
 
 const PgSession = connectPgSimple(session);
 
@@ -175,6 +176,41 @@ export async function registerRoutes(
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
       stats
     });
+  });
+
+  // Track user session activity (called on page visit)
+  app.post("/api/auth/track-session", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const sessionId = req.sessionID;
+
+      // Create or update active session
+      const existingSession = await db
+        .select()
+        .from(activeSessions)
+        .where(eq(activeSessions.sessionId, sessionId))
+        .limit(1);
+
+      if (existingSession.length > 0) {
+        // Update last activity
+        await db
+          .update(activeSessions)
+          .set({ lastActivityAt: new Date() })
+          .where(eq(activeSessions.sessionId, sessionId));
+      } else {
+        // Create new session
+        await db.insert(activeSessions).values({
+          userId,
+          sessionId,
+          connectedAt: new Date(),
+          lastActivityAt: new Date(),
+        });
+      }
+
+      res.json({ message: "Session tracked" });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to track session", error: error.message });
+    }
   });
 
   // Logout
@@ -707,10 +743,7 @@ export async function registerRoutes(
   app.post("/api/announcements", requireAdmin, async (req, res) => {
     try {
       const validated = insertAnnouncementSchema.parse(req.body);
-      const announcement = await storage.createAnnouncement({
-        ...validated,
-        createdBy: req.session.userId!
-      });
+      const announcement = await storage.createAnnouncement(validated);
       res.json({ announcement });
     } catch (error: any) {
       res.status(400).json({ message: "Failed to create announcement", error: error.message });

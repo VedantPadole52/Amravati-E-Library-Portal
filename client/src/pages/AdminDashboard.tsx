@@ -53,6 +53,9 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    // Track session on dashboard load
+    fetch("/api/auth/track-session", { method: "POST" }).catch(() => {});
+    
     loadAnalytics();
     connectWebSocket();
   }, []);

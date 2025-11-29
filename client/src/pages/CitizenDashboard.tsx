@@ -41,6 +41,9 @@ export default function CitizenDashboard() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    // Track session on dashboard load
+    fetch("/api/auth/track-session", { method: "POST" }).catch(() => {});
+    
     loadData();
   }, []);
 

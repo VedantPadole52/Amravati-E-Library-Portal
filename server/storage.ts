@@ -291,17 +291,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTodayVisits(): Promise<number> {
-    // Count from active sessions (actual page visits) first, fallback to reading history
+    // Count distinct users with activity TODAY from active sessions (updated in last 24 hours and today's date)
     const [activeResult] = await db
       .select({ count: sql<number>`count(distinct ${activeSessions.userId})` })
       .from(activeSessions)
-      .where(sql`DATE(${activeSessions.connectedAt}) = CURRENT_DATE`);
+      .where(sql`${activeSessions.lastActivityAt} > NOW() - INTERVAL '24 hours' AND DATE(${activeSessions.lastActivityAt}) = CURRENT_DATE`);
     
-    if (activeResult && activeResult.count > 0) {
-      return Number(activeResult.count || 0);
+    const activeCount = Number(activeResult?.count || 0);
+    if (activeCount > 0) {
+      return activeCount;
     }
     
-    // Fallback to reading history if no active sessions
+    // Fallback: count from reading history if no active sessions today
     const [result] = await db
       .select({ count: sql<number>`count(distinct ${readingHistory.userId})` })
       .from(readingHistory)
@@ -342,17 +343,17 @@ export class DatabaseStorage implements IStorage {
     const now = new Date();
     const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
 
-    // Daily visits for the last 7 days - count from active sessions (actual visits)
+    // Daily visits for the last 7 days - count from active sessions (last activity date)
     const dailyVisits = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
       
-      // Try active sessions first
+      // Count distinct users with activity on this date
       const [activeResult] = await db
         .select({ count: sql<number>`count(distinct ${activeSessions.userId})` })
         .from(activeSessions)
-        .where(sql`DATE(${activeSessions.connectedAt}) = ${dateStr}`);
+        .where(sql`DATE(${activeSessions.lastActivityAt}) = ${dateStr}`);
       
       let visitCount = Number(activeResult?.count || 0);
       
