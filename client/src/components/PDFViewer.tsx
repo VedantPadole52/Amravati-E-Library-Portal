@@ -58,25 +58,8 @@ export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PD
           )}
         </CardContent>
 
-        <div className="border-t p-4 flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="gap-2"
-            data-testid="button-pdf-prev"
-          >
-            <ChevronLeft className="h-4 w-4" /> Previous
-          </Button>
-
-          <div className="flex items-center gap-4">
-            {pdfUrl && (
-              <span className="text-sm font-medium">
-                Viewing PDF Page {currentPage}
-              </span>
-            )}
-            {pdfUrl && (
+        <div className="border-t p-4 flex items-center justify-end gap-2">
+          {pdfUrl && (
             <Button
               variant="outline"
               size="sm"
@@ -94,19 +77,7 @@ export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PD
             >
               <Download className="h-4 w-4" /> Download PDF
             </Button>
-            )}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="gap-2"
-            data-testid="button-pdf-next"
-          >
-            Next <ChevronRight className="h-4 w-4" />
-          </Button>
+          )}
         </div>
       </Card>
     </div>
