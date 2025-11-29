@@ -20,6 +20,7 @@ import AdminAnnouncements from "@/pages/AdminAnnouncements";
 import AdminReports from "@/pages/AdminReports";
 import QuestionBanks from "@/pages/QuestionBanks";
 import UserProfile from "@/pages/UserProfile";
+import Leaderboard from "@/pages/Leaderboard";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/admin/announcements" component={AdminAnnouncements} />
       <Route path="/admin/reports" component={AdminReports} />
       <Route path="/profile" component={UserProfile} />
+      <Route path="/leaderboard" component={Leaderboard} />
       <Route component={NotFound} />
     </Switch>
   );

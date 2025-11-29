@@ -834,6 +834,38 @@ export async function registerRoutes(
     }
   });
 
+  // ============= LEADERBOARD ROUTES =============
+
+  // Get top readers
+  app.get("/api/leaderboard/top-readers", async (req, res) => {
+    try {
+      const data = await storage.getTopReaders();
+      res.json({ data });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch leaderboard", error: error.message });
+    }
+  });
+
+  // Get streak leaders
+  app.get("/api/leaderboard/streak-leaders", async (req, res) => {
+    try {
+      const data = await storage.getStreakLeaders();
+      res.json({ data });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch leaderboard", error: error.message });
+    }
+  });
+
+  // Get most reviewers
+  app.get("/api/leaderboard/most-reviewers", async (req, res) => {
+    try {
+      const data = await storage.getMostReviewers();
+      res.json({ data });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch leaderboard", error: error.message });
+    }
+  });
+
   // Serve static files from public directory
   app.use(expressApp.static(path.join(".", "public")));
 

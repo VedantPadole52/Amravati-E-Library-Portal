@@ -73,6 +73,11 @@ export interface IStorage {
   createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
   getAnnouncements(limit?: number): Promise<Announcement[]>;
   deleteAnnouncement(id: number): Promise<boolean>;
+
+  // Leaderboards
+  getTopReaders(): Promise<any[]>;
+  getStreakLeaders(): Promise<any[]>;
+  getMostReviewers(): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -487,6 +492,68 @@ export class DatabaseStorage implements IStorage {
   async deleteCategory(id: number): Promise<boolean> {
     const result = await db.delete(categories).where(eq(categories.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getTopReaders(): Promise<any[]> {
+    const result = await db.select({
+      userId: readingHistory.userId,
+      userName: users.name,
+      booksRead: sql<number>`count(distinct ${readingHistory.bookId})`,
+    })
+    .from(readingHistory)
+    .leftJoin(users, eq(readingHistory.userId, users.id))
+    .where(eq(readingHistory.progress, 100))
+    .groupBy(readingHistory.userId, users.name)
+    .orderBy(sql`count(distinct ${readingHistory.bookId}) DESC`)
+    .limit(10);
+    
+    return result.map((r: any) => ({
+      userId: r.userId,
+      name: r.userName || "Unknown",
+      booksRead: Number(r.booksRead || 0),
+    }));
+  }
+
+  async getStreakLeaders(): Promise<any[]> {
+    const { readingStreaks } = await import("@shared/schema");
+    const result = await db.select({
+      userId: readingStreaks.userId,
+      userName: users.name,
+      currentStreak: readingStreaks.currentStreak,
+      longestStreak: readingStreaks.longestStreak,
+    })
+    .from(readingStreaks)
+    .leftJoin(users, eq(readingStreaks.userId, users.id))
+    .where(sql`${readingStreaks.currentStreak} > 0`)
+    .orderBy(sql`${readingStreaks.longestStreak} DESC`)
+    .limit(10);
+    
+    return result.map((r: any) => ({
+      userId: r.userId,
+      name: r.userName || "Unknown",
+      currentStreak: r.currentStreak || 0,
+      longestStreak: r.longestStreak || 0,
+    }));
+  }
+
+  async getMostReviewers(): Promise<any[]> {
+    const { bookRatings } = await import("@shared/schema");
+    const result = await db.select({
+      userId: bookRatings.userId,
+      userName: users.name,
+      reviewCount: sql<number>`count(${bookRatings.id})`,
+    })
+    .from(bookRatings)
+    .leftJoin(users, eq(bookRatings.userId, users.id))
+    .groupBy(bookRatings.userId, users.name)
+    .orderBy(sql`count(${bookRatings.id}) DESC`)
+    .limit(10);
+    
+    return result.map((r: any) => ({
+      userId: r.userId,
+      name: r.userName || "Unknown",
+      reviewCount: Number(r.reviewCount || 0),
+    }));
   }
 }
 

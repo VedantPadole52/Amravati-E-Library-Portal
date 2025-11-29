@@ -1,7 +1,7 @@
 
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Search, User, Bell, LogOut, Menu, Home as HomeIcon, BookOpen, GraduationCap, Sun, Moon } from "lucide-react";
+import { Search, User, Bell, LogOut, Menu, Home as HomeIcon, BookOpen, GraduationCap, Sun, Moon, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { getTranslation, type Language } from "@/lib/translations";
@@ -263,6 +263,16 @@ export default function Header({ variant = "public" }: HeaderProps) {
             </button>
             <button className="block w-full text-left px-4 py-3 text-sm text-white border-b border-blue-800">NCERT Books</button>
             <button className="block w-full text-left px-4 py-3 text-sm text-white border-b border-blue-800">Competitive Exams</button>
+            <button 
+              onClick={() => {
+                setLocation("/leaderboard");
+                setIsMobileMenuOpen(false);
+              }}
+              className="block w-full text-left px-4 py-3 text-sm text-white border-b border-blue-800 flex items-center gap-2"
+              data-testid="button-leaderboard-mobile"
+            >
+              <Trophy className="h-4 w-4" /> Leaderboard
+            </button>
             <button 
               onClick={() => {
                 setNewsModalOpen(true);
