@@ -292,9 +292,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTodayVisits(): Promise<number> {
-    // Count distinct users with activity TODAY from active sessions
+    // Count total visits (all sessions) TODAY, not just distinct users
     const [activeResult] = await db
-      .select({ count: sql<number>`count(distinct ${activeSessions.userId})` })
+      .select({ count: sql<number>`count(*)` })
       .from(activeSessions)
       .where(sql`DATE(${activeSessions.lastActivityAt}) = CURRENT_DATE`);
     
@@ -303,9 +303,9 @@ export class DatabaseStorage implements IStorage {
       return activeCount;
     }
     
-    // Fallback: count from reading history if no active sessions today
+    // Fallback: count total reading history entries if no active sessions today
     const [result] = await db
-      .select({ count: sql<number>`count(distinct ${readingHistory.userId})` })
+      .select({ count: sql<number>`count(*)` })
       .from(readingHistory)
       .where(sql`DATE(${readingHistory.lastAccessedAt}) = CURRENT_DATE`);
     return Number(result?.count || 0);
