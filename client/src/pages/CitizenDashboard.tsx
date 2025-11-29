@@ -24,12 +24,7 @@ import { authApi, booksApi, categoriesApi, type Book as BookType, type User as U
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
-import book1 from "@assets/generated_images/history_book_cover.png";
-import book2 from "@assets/generated_images/mathematics_book_cover.png";
-import book3 from "@assets/generated_images/science_book_cover.png";
-
-// Fallback images
-const FALLBACK_COVERS = [book1, book2, book3];
+// No fallback covers - only real uploaded data from admin
 
 export default function CitizenDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -174,6 +169,9 @@ export default function CitizenDashboard() {
   };
 
   const filteredBooks = books.filter(book => {
+    // Only show books with actual cover URL from admin upload
+    if (!book.coverUrl) return false;
+    
     if (activeTab === "all") return true;
     if (activeTab.startsWith("cat-")) {
       const categoryId = parseInt(activeTab.split("-")[1]);
@@ -181,14 +179,6 @@ export default function CitizenDashboard() {
     }
     return true;
   });
-
-  const getBookCover = (book: BookType) => {
-    if (book.coverUrl) {
-      return book.coverUrl;
-    }
-    // Use fallback based on book ID if no cover URL
-    return FALLBACK_COVERS[book.id % 3];
-  };
 
   if (isLoading) {
     return (
@@ -333,14 +323,10 @@ export default function CitizenDashboard() {
                       <div key={book.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col" data-testid={`card-book-${book.id}`}>
                         <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
                           <img 
-                            src={getBookCover(book)} 
+                            src={book.coverUrl || ""} 
                             alt={book.title} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                             loading="lazy"
-                            onError={(e) => {
-                              const img = e.target as HTMLImageElement;
-                              img.src = FALLBACK_COVERS[book.id % 3];
-                            }}
                             data-testid={`img-book-cover-${book.id}`}
                           />
                           <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

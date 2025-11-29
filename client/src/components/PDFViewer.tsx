@@ -13,7 +13,6 @@ interface PDFViewerProps {
 
 export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PDFViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = pdfUrl ? 1 : 50;
 
   // Track reading activity
   useEffect(() => {
@@ -25,24 +24,6 @@ export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PD
       }).catch(() => {});
     }
   }, [bookId]);
-
-  // Dummy PDF content pages (only shown if no pdfUrl)
-  const dummyPages = Array.from({ length: totalPages }, (_, i) => `
-    Chapter ${Math.floor(i / 10) + 1}
-    
-    Page ${i + 1}
-    
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-    Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-    
-    ${i % 5 === 0 ? "Section Break: " + ["Introduction", "Development", "Conclusion", "References", "Appendix"][Math.floor(i / 10)] : ""}
-    
-    This is dummy content for demonstration purposes. In a real application,
-    this would display actual PDF content using a library like react-pdf.
-    
-    Content continues here with more text...
-  `);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -71,8 +52,8 @@ export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PD
               data-testid="pdf-iframe"
             />
           ) : (
-            <div className="p-8 rounded min-h-96 whitespace-pre-wrap text-sm leading-relaxed bg-white">
-              {dummyPages[currentPage - 1]}
+            <div className="p-8 rounded min-h-96 flex items-center justify-center bg-white">
+              <p className="text-gray-500 text-center">No PDF available for this book. Admin must upload a PDF file.</p>
             </div>
           )}
         </CardContent>
@@ -90,25 +71,20 @@ export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PD
           </Button>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">
-              Page <input 
-                type="number" 
-                value={currentPage}
-                onChange={(e) => setCurrentPage(Math.min(totalPages, Math.max(1, parseInt(e.target.value) || 1)))}
-                className="w-12 px-2 py-1 border rounded"
-                min="1"
-                max={totalPages}
-                data-testid="input-pdf-page"
-              /> of {totalPages}
-            </span>
+            {pdfUrl && (
+              <span className="text-sm font-medium">
+                Viewing PDF Page {currentPage}
+              </span>
+            )}
+            {pdfUrl && (
             <Button
               variant="outline"
               size="sm"
               className="gap-2"
               onClick={() => {
                 const element = document.createElement("a");
-                element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(dummyPages.join("\n\n")));
-                element.setAttribute("download", `${title.replace(/\s+/g, "_")}.txt`);
+                element.setAttribute("href", pdfUrl);
+                element.setAttribute("download", `${title.replace(/\s+/g, "_")}.pdf`);
                 element.style.display = "none";
                 document.body.appendChild(element);
                 element.click();
@@ -116,8 +92,9 @@ export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PD
               }}
               data-testid="button-pdf-download"
             >
-              <Download className="h-4 w-4" /> Download
+              <Download className="h-4 w-4" /> Download PDF
             </Button>
+            )}
           </div>
 
           <Button
