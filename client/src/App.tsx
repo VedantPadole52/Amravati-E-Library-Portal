@@ -15,6 +15,7 @@ import ReadingHistory from "@/pages/ReadingHistory";
 import AdminBookManager from "@/pages/AdminBookManager";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminCategories from "@/pages/AdminCategories";
+import QuestionBanks from "@/pages/QuestionBanks";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/portal/admin-access" component={AdminLogin} />
       <Route path="/citizen/dashboard" component={CitizenDashboard} />
       <Route path="/citizen/reading-history" component={ReadingHistory} />
+      <Route path="/citizen/question-banks" component={QuestionBanks} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/books" component={AdminBookManager} />
       <Route path="/admin/users" component={AdminUsers} />

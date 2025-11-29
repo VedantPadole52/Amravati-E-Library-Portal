@@ -86,13 +86,20 @@ export default function CitizenDashboard() {
     }
   };
 
-  const filteredBooks = books;
+  const filteredBooks = books.filter(book => {
+    if (activeTab === "all") return true;
+    if (activeTab.startsWith("cat-")) {
+      const categoryId = parseInt(activeTab.split("-")[1]);
+      return book.categoryId === categoryId;
+    }
+    return true;
+  });
 
   const getBookCover = (book: BookType) => {
-    if (book.coverUrl && book.coverUrl.startsWith("/assets")) {
+    if (book.coverUrl) {
       return book.coverUrl;
     }
-    // Use fallback based on book ID
+    // Use fallback based on book ID if no cover URL
     return FALLBACK_COVERS[book.id % 3];
   };
 
@@ -219,7 +226,16 @@ export default function CitizenDashboard() {
                     {filteredBooks.map((book) => (
                       <div key={book.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col" data-testid={`card-book-${book.id}`}>
                         <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
-                          <img src={getBookCover(book)} alt={book.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img 
+                            src={getBookCover(book)} 
+                            alt={book.title} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.src = FALLBACK_COVERS[book.id % 3];
+                            }}
+                            data-testid={`img-book-cover-${book.id}`}
+                          />
                           <div className="absolute top-2 right-2">
                              <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
                                <Bookmark className="h-4 w-4 text-gray-600" />
@@ -295,8 +311,15 @@ export default function CitizenDashboard() {
             {/* Banner */}
             <div className="bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-lg p-6 text-white text-center">
               <h4 className="font-bold mb-2">Exam Prep 2025</h4>
-              <p className="text-xs opacity-90 mb-4">New question banks for MPSC available now.</p>
-              <Button size="sm" className="bg-white text-[#ea580c] hover:bg-gray-100 w-full text-xs font-bold">Explore Now</Button>
+              <p className="text-xs opacity-90 mb-4">New question banks for MPSC & UPSC available now.</p>
+              <Button 
+                size="sm" 
+                className="bg-white text-[#ea580c] hover:bg-gray-100 w-full text-xs font-bold"
+                onClick={() => setLocation("/citizen/question-banks")}
+                data-testid="button-explore-questions"
+              >
+                Explore Now
+              </Button>
             </div>
 
           </div>

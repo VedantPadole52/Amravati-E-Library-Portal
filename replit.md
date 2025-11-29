@@ -22,11 +22,28 @@ Preferred communication style: Simple, everyday language.
 - **File Storage**: PDFs stored in `public/uploads/` directory with unique filenames
 - **File Display**: Visual indicator showing selected PDF file before upload
 
+### Category Filtering (FIXED)
+- **Working Category Filter**: Citizens can now click on category buttons to filter books by category
+- **Proper Book Filtering Logic**: Books display correctly when category is selected, showing only books in that category
+- **Fallback Cover Images**: Book covers display properly with error handling and fallback images
+
+### Question Banks (NEW)
+- **MPSC Question Bank**: Previous years MPSC questions with multiple years of data
+- **UPSC Question Bank**: Previous years UPSC questions organized by year
+- **Year Selection**: Filter questions by specific year or view all years
+- **Question Details**: Each question shows subject, difficulty level, options, and correct answer
+- **Question Bank Page**: New `/citizen/question-banks` page accessible from dashboard
+
 ### Real-time Data
 - Activity logs refresh every 5 seconds from `reading_history` table
 - Daily visit charts show actual 7-day trends from database
 - Category statistics pie chart displays real book distribution
 - User activity tracker with completion status (started, reading, completed)
+
+### PDF Report Generation (FIXED)
+- **Generate Report Button**: Admin can click "Generate Report" on dashboard to download PDF
+- **System Summary**: Report includes total users, books, and today's visits
+- **Analytics Export**: PDF contains daily visits, category distribution, and top books
 
 ## System Architecture
 
