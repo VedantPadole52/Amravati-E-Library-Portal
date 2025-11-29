@@ -75,8 +75,9 @@ export default function AdminBookManager() {
     
     try {
       let pdfUrl = "";
+      let coverUrl = formData.coverUrl || null;
 
-      // Upload PDF if provided
+      // Upload file if provided
       if (pdfFile) {
         const formDataUpload = new FormData();
         formDataUpload.append("file", pdfFile);
@@ -87,11 +88,24 @@ export default function AdminBookManager() {
         });
 
         if (!uploadResponse.ok) {
-          throw new Error("Failed to upload PDF");
+          throw new Error("Failed to upload file");
         }
 
         const uploadData = await uploadResponse.json();
-        pdfUrl = uploadData.fileUrl || "";
+        const fileUrl = uploadData.fileUrl || "";
+        
+        // Check file extension to determine storage location
+        const fileName = pdfFile.name.toLowerCase();
+        if (fileName.endsWith('.pdf')) {
+          pdfUrl = fileUrl;
+          // Use first page thumbnail or PDF icon as cover if no cover URL provided
+          if (!coverUrl) {
+            coverUrl = fileUrl; // Show PDF in catalog
+          }
+        } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png')) {
+          // Image file - store as cover
+          coverUrl = fileUrl;
+        }
       }
 
       const newBook = await booksApi.create({
@@ -102,7 +116,7 @@ export default function AdminBookManager() {
         categoryId: 1,
         subcategory: formData.subcategory || null,
         description: `Google Books: ${formData.googleBooksLink || 'N/A'}`,
-        coverUrl: formData.coverUrl || null,
+        coverUrl: coverUrl,
         pdfUrl: pdfUrl || null,
         publishYear: new Date().getFullYear(),
         language: formData.language,
@@ -159,6 +173,40 @@ export default function AdminBookManager() {
     setUploading(true);
     
     try {
+      let pdfUrl = null;
+      let coverUrl = formData.coverUrl || null;
+
+      // Upload file if provided
+      if (pdfFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", pdfFile);
+        
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataUpload,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload file");
+        }
+
+        const uploadData = await uploadResponse.json();
+        const fileUrl = uploadData.fileUrl || "";
+        
+        // Check file extension to determine storage location
+        const fileName = pdfFile.name.toLowerCase();
+        if (fileName.endsWith('.pdf')) {
+          pdfUrl = fileUrl;
+          // Use first page thumbnail or PDF icon as cover if no cover URL provided
+          if (!coverUrl) {
+            coverUrl = fileUrl; // Show PDF in catalog
+          }
+        } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png')) {
+          // Image file - store as cover
+          coverUrl = fileUrl;
+        }
+      }
+
       const updatedBook = await booksApi.update(editingId!, {
         title: formData.title,
         author: formData.author,
@@ -167,8 +215,8 @@ export default function AdminBookManager() {
         categoryId: 1,
         subcategory: formData.subcategory || null,
         description: `Google Books: ${formData.googleBooksLink || 'N/A'}`,
-        coverUrl: formData.coverUrl || null,
-        pdfUrl: null,
+        coverUrl: coverUrl,
+        pdfUrl: pdfUrl,
         publishYear: new Date().getFullYear(),
         language: formData.language,
       });
