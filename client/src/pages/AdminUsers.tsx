@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Mail, Phone, Calendar, ArrowLeft, Search, Ban, Check } from "lucide-react";
+import { Users, Mail, Phone, Calendar, ArrowLeft, Search, Ban, Check, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface User {
@@ -109,6 +109,62 @@ export default function AdminUsers() {
     }
   };
 
+  const downloadUsersPDF = async () => {
+    try {
+      const response = await fetch("/api/admin/users/export/pdf");
+      if (!response.ok) throw new Error("Failed to download PDF");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `users-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Success",
+        description: "User data downloaded as PDF"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    }
+  };
+
+  const downloadUsersExcel = async () => {
+    try {
+      const response = await fetch("/api/admin/users/export/excel");
+      if (!response.ok) throw new Error("Failed to download Excel");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `users-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Success",
+        description: "User data downloaded as Excel"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Header variant="admin" />
@@ -135,7 +191,7 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        {/* Search & Sort */}
+        {/* Search & Sort & Export */}
         <Card className="mb-6">
           <CardContent className="p-4 space-y-3">
             <div className="relative">
@@ -148,7 +204,7 @@ export default function AdminUsers() {
                 data-testid="input-search-users"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button 
                 variant={sortBy === "date" ? "default" : "outline"}
                 size="sm"
@@ -173,6 +229,27 @@ export default function AdminUsers() {
               >
                 Sort by Status
               </Button>
+              
+              <div className="ml-auto flex gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadUsersPDF}
+                  className="gap-2"
+                  data-testid="button-download-users-pdf"
+                >
+                  <FileText className="h-4 w-4" /> PDF
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadUsersExcel}
+                  className="gap-2"
+                  data-testid="button-download-users-excel"
+                >
+                  <Download className="h-4 w-4" /> Excel
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

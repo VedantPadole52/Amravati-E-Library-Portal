@@ -727,6 +727,113 @@ export async function registerRoutes(
     }
   });
 
+  // ============= USER DATA EXPORT ROUTES =============
+
+  // Download users as PDF
+  app.get("/api/admin/users/export/pdf", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+
+      const doc = new PDFDocument({ margin: 40 });
+      const filename = `users-${new Date().toISOString().split('T')[0]}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      doc.pipe(res);
+
+      // Header
+      doc.fontSize(20).font("Helvetica-Bold").text("Amravati E-Library Portal", { align: "center" });
+      doc.fontSize(14).fillColor("#0A346F").text("User Management Report", { align: "center" });
+      doc.fontSize(10).fillColor("#666").text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
+      doc.moveDown(0.5);
+      doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+      doc.moveDown();
+
+      // Summary
+      doc.fontSize(12).font("Helvetica-Bold").fillColor("#000").text("User Summary:");
+      doc.fontSize(11).font("Helvetica").fillColor("#333");
+      doc.text(`Total Users: ${allUsers.length}`);
+      doc.text(`Active Users: ${allUsers.filter(u => !u.isBlocked).length}`);
+      doc.text(`Blocked Users: ${allUsers.filter(u => u.isBlocked).length}`);
+      doc.moveDown();
+
+      // Users Table
+      doc.fontSize(12).font("Helvetica-Bold").fillColor("#000").text("User Details:");
+      doc.moveDown(0.3);
+
+      const tableTop = doc.y;
+      const col1 = 50;
+      const col2 = 160;
+      const col3 = 280;
+      const col4 = 380;
+      const col5 = 480;
+      const rowHeight = 20;
+
+      // Table header
+      doc.fontSize(10).font("Helvetica-Bold").fillColor("#fff");
+      doc.rect(40, tableTop - 3, 515, rowHeight).fill("#0A346F");
+      doc.text("Name", col1, tableTop + 3);
+      doc.text("Email", col2, tableTop + 3);
+      doc.text("Phone", col3, tableTop + 3);
+      doc.text("Role", col4, tableTop + 3);
+      doc.text("Status", col5, tableTop + 3);
+
+      doc.moveDown(1.3);
+      doc.fontSize(9).font("Helvetica").fillColor("#000");
+
+      // Table rows
+      allUsers.slice(0, 20).forEach((user) => {
+        const y = doc.y;
+        doc.text(user.name.substring(0, 20), col1, y);
+        doc.text(user.email.substring(0, 25), col2, y);
+        doc.text(user.phone || "—", col3, y);
+        doc.text(user.role, col4, y);
+        doc.text(user.isBlocked ? "Blocked" : "Active", col5, y);
+        doc.moveDown(1.2);
+      });
+
+      if (allUsers.length > 20) {
+        doc.fontSize(9).fillColor("#666").text(`... and ${allUsers.length - 20} more users`, { align: "center" });
+      }
+
+      doc.moveDown(2);
+      doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+      doc.fontSize(8).fillColor("#999").text("© Amravati Municipal Corporation - E-Library Portal", { align: "center" });
+
+      doc.end();
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to generate PDF", error: error.message });
+    }
+  });
+
+  // Download users as Excel
+  app.get("/api/admin/users/export/excel", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+
+      const userData = allUsers.map((user) => ({
+        Name: user.name,
+        Email: user.email,
+        Phone: user.phone || "—",
+        Role: user.role,
+        Status: user.isBlocked ? "Blocked" : "Active",
+        "Joined Date": new Date(user.createdAt).toLocaleDateString(),
+      }));
+
+      let workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(userData), "Users");
+
+      const filename = `users-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
+      res.send(buffer);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to export data", error: error.message });
+    }
+  });
+
   // Serve static files from public directory
   app.use(expressApp.static(path.join(".", "public")));
 
