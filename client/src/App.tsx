@@ -19,6 +19,7 @@ import AdminSettings from "@/pages/AdminSettings";
 import AdminAnnouncements from "@/pages/AdminAnnouncements";
 import AdminReports from "@/pages/AdminReports";
 import QuestionBanks from "@/pages/QuestionBanks";
+import UserProfile from "@/pages/UserProfile";
 
 function Router() {
   return (
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/announcements" component={AdminAnnouncements} />
       <Route path="/admin/reports" component={AdminReports} />
+      <Route path="/profile" component={UserProfile} />
       <Route component={NotFound} />
     </Switch>
   );

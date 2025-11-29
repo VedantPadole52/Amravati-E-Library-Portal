@@ -175,3 +175,136 @@ export const announcementsRelations = relations(announcements, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// Reading Streaks Table - Track consecutive days of reading
+export const readingStreaks = pgTable("reading_streaks", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  lastReadDate: timestamp("last_read_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertReadingStreakSchema = createInsertSchema(readingStreaks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertReadingStreak = z.infer<typeof insertReadingStreakSchema>;
+export type ReadingStreak = typeof readingStreaks.$inferSelect;
+
+// Reading Goals Table - Users set annual reading targets
+export const readingGoals = pgTable("reading_goals", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  year: integer("year").notNull(),
+  targetBooks: integer("target_books").notNull(),
+  booksRead: integer("books_read").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertReadingGoalSchema = createInsertSchema(readingGoals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertReadingGoal = z.infer<typeof insertReadingGoalSchema>;
+export type ReadingGoal = typeof readingGoals.$inferSelect;
+
+// Book Ratings & Reviews Table
+export const bookRatings = pgTable("book_ratings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  bookId: integer("book_id").references(() => books.id).notNull(),
+  rating: integer("rating").notNull(), // 1-5 stars
+  review: text("review"),
+  helpful: integer("helpful").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertBookRatingSchema = createInsertSchema(bookRatings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertBookRating = z.infer<typeof insertBookRatingSchema>;
+export type BookRating = typeof bookRatings.$inferSelect;
+
+// Reading Wishlist Table - Save books to read later
+export const readingWishlist = pgTable("reading_wishlist", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  bookId: integer("book_id").references(() => books.id).notNull(),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+});
+
+export const insertWishlistSchema = createInsertSchema(readingWishlist).omit({
+  id: true,
+  addedAt: true,
+});
+
+export type InsertWishlist = z.infer<typeof insertWishlistSchema>;
+export type Wishlist = typeof readingWishlist.$inferSelect;
+
+// Reading Achievements Table - Badges earned
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'streak_7', 'books_10', 'first_review', etc
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  earnedAt: timestamp("earned_at").defaultNow().notNull(),
+});
+
+export const insertAchievementSchema = createInsertSchema(achievements).omit({
+  id: true,
+  earnedAt: true,
+});
+
+export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+export type Achievement = typeof achievements.$inferSelect;
+
+// Relations
+export const readingStreaksRelations = relations(readingStreaks, ({ one }) => ({
+  user: one(users, {
+    fields: [readingStreaks.userId],
+    references: [users.id],
+  }),
+}));
+
+export const readingGoalsRelations = relations(readingGoals, ({ one }) => ({
+  user: one(users, {
+    fields: [readingGoals.userId],
+    references: [users.id],
+  }),
+}));
+
+export const bookRatingsRelations = relations(bookRatings, ({ one }) => ({
+  user: one(users, {
+    fields: [bookRatings.userId],
+    references: [users.id],
+  }),
+  book: one(books, {
+    fields: [bookRatings.bookId],
+    references: [books.id],
+  }),
+}));
+
+export const wishlistRelations = relations(readingWishlist, ({ one }) => ({
+  user: one(users, {
+    fields: [readingWishlist.userId],
+    references: [users.id],
+  }),
+  book: one(books, {
+    fields: [readingWishlist.bookId],
+    references: [books.id],
+  }),
+}));
+
+export const achievementsRelations = relations(achievements, ({ one }) => ({
+  user: one(users, {
+    fields: [achievements.userId],
+    references: [users.id],
+  }),
+}));

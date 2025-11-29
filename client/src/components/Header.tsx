@@ -139,13 +139,22 @@ export default function Header({ variant = "public" }: HeaderProps) {
           </div>
 
           {variant !== "public" && (
-            <button 
-              onClick={() => setLocation("/")}
-              className="text-red-600 hover:text-red-800 font-bold ml-2 flex items-center gap-1"
-              data-testid="button-logout"
-            >
-              <LogOut className="h-3 w-3" /> <span className="hidden sm:inline">{t('logout')}</span>
-            </button>
+            <>
+              <button 
+                onClick={() => setLocation("/profile")}
+                className="text-blue-600 hover:text-blue-800 font-bold ml-2 flex items-center gap-1"
+                data-testid="button-profile"
+              >
+                <User className="h-3 w-3" /> <span className="hidden sm:inline">Profile</span>
+              </button>
+              <button 
+                onClick={() => setLocation("/")}
+                className="text-red-600 hover:text-red-800 font-bold ml-2 flex items-center gap-1"
+                data-testid="button-logout"
+              >
+                <LogOut className="h-3 w-3" /> <span className="hidden sm:inline">{t('logout')}</span>
+              </button>
+            </>
           )}
         </div>
       </div>
