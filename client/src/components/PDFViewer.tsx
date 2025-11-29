@@ -45,12 +45,24 @@ export default function PDFViewer({ title, author, bookId, pdfUrl, onClose }: PD
 
         <CardContent className="flex-1 overflow-auto bg-gray-100">
           {pdfUrl ? (
-            <iframe 
-              src={pdfUrl + "#page=" + currentPage}
-              className="w-full h-full rounded"
-              style={{ minHeight: "500px" }}
-              data-testid="pdf-iframe"
-            />
+            <div className="w-full h-full flex flex-col">
+              <object 
+                data={pdfUrl}
+                type="application/pdf"
+                className="flex-1 w-full"
+                style={{ minHeight: "500px" }}
+              >
+                <iframe 
+                  src={pdfUrl}
+                  className="w-full h-full"
+                  style={{ minHeight: "500px", border: "none" }}
+                  data-testid="pdf-iframe"
+                />
+              </object>
+              <div className="text-xs text-gray-500 p-2 text-center">
+                PDF Viewer - Use your browser's controls to zoom and navigate
+              </div>
+            </div>
           ) : (
             <div className="p-8 rounded min-h-96 flex items-center justify-center bg-white">
               <p className="text-gray-500 text-center">No PDF available for this book. Admin must upload a PDF file.</p>

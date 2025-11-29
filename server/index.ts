@@ -22,6 +22,10 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+// Serve static files (uploads folder) - both dev and production
+import path from "path";
+app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
