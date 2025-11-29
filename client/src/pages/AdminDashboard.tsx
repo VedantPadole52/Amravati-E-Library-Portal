@@ -12,11 +12,13 @@ import {
   Settings, 
   FileText, 
   UserCheck,
-  AlertCircle
+  AlertCircle,
+  Home as HomeIcon
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-
-// MOCK DATA GENERATORS FOR "REAL-TIME" FEEL
+import { adminApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 const CHART_DATA = [
   { name: "Mon", visits: 400 },
@@ -35,58 +37,102 @@ const PIE_DATA = [
   { name: "Others", value: 200, color: "#9ca3af" },
 ];
 
-const INITIAL_LOGS = [
-  { id: 1, user: "Amit_K", action: "Logged In", time: "10:45 AM", type: "login" },
-  { id: 2, user: "Priya_S", action: "Started 'Modern Physics'", time: "10:46 AM", type: "read" },
-  { id: 3, user: "Rahul_V", action: "Downloaded 'MPSC Guide'", time: "10:48 AM", type: "download" },
-  { id: 4, user: "Admin_Sys", action: "Updated Catalog", time: "10:50 AM", type: "admin" },
-];
-
 export default function AdminDashboard() {
-  // State for real-time simulation
-  const [activeUsers, setActiveUsers] = useState(124);
-  const [totalVisits, setTotalVisits] = useState(1452);
-  const [logs, setLogs] = useState(INITIAL_LOGS);
-  const [isConnected, setIsConnected] = useState(true);
+  const [activeUsers, setActiveUsers] = useState(0);
+  const [totalVisits, setTotalVisits] = useState(0);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
+  const [logs, setLogs] = useState<Array<{id: number; user: string; action: string; time: string; type: string}>>([]);
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
-  // Simulate Real-Time Socket Updates
+  useEffect(() => {
+    loadAnalytics();
+    connectWebSocket();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      const data = await adminApi.getAnalytics();
+      setActiveUsers(data.activeUsers);
+      setTotalVisits(data.todayVisits);
+      setTotalBooks(data.totalBooks);
+      setTotalUsers(data.totalUsers);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to load analytics. Please check your permissions.",
+      });
+      setLocation("/portal/admin-access");
+    }
+  };
+
+  const connectWebSocket = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+    ws.onopen = () => {
+      console.log("WebSocket connected");
+      setIsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === "active_users") {
+          setActiveUsers(data.count);
+        }
+      } catch (error) {
+        console.error("WebSocket message error:", error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setIsConnected(false);
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket disconnected");
+      setIsConnected(false);
+      
+      // Reconnect after 5 seconds
+      setTimeout(() => {
+        connectWebSocket();
+      }, 5000);
+    };
+
+    return () => {
+      ws.close();
+    };
+  };
+
+  // Simulate log updates
   useEffect(() => {
     const interval = setInterval(() => {
-      // Randomly fluctuate active users
-      setActiveUsers(prev => {
-        const change = Math.floor(Math.random() * 5) - 2; // -2 to +2
-        return Math.max(50, prev + change);
-      });
+      const users = ["Vikram_R", "Sneha_P", "Anjali_M", "Rohit_D", "Guest_User"];
+      const actions = [
+        { action: "Logged In", type: "login" },
+        { action: "Started Reading 'Indian Polity'", type: "read" },
+        { action: "Downloaded 'MPSC Guide'", type: "download" },
+        { action: "Logged Out", type: "logout" },
+      ];
+      
+      const randomUser = users[Math.floor(Math.random() * users.length)];
+      const randomAction = actions[Math.floor(Math.random() * actions.length)];
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      // Increment visits occasionally
-      if (Math.random() > 0.7) {
-        setTotalVisits(prev => prev + 1);
-      }
-
-      // Add random log occasionally
-      if (Math.random() > 0.6) {
-        const users = ["Vikram_R", "Sneha_P", "Anjali_M", "Rohit_D", "Guest_User"];
-        const actions = [
-          { action: "Logged In", type: "login" },
-          { action: "Started Reading 'Indian Polity'", type: "read" },
-          { action: "Logged Out", type: "logout" },
-          { action: "Failed Login Attempt", type: "alert" }
-        ];
-        
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-        const randomAction = actions[Math.floor(Math.random() * actions.length)];
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        setLogs(prev => [{
-          id: Date.now(),
-          user: randomUser,
-          action: randomAction.action,
-          time: time,
-          type: randomAction.type
-        }, ...prev.slice(0, 9)]); // Keep last 10
-      }
-
-    }, 2000);
+      setLogs(prev => [{
+        id: Date.now(),
+        user: randomUser,
+        action: randomAction.action,
+        time: time,
+        type: randomAction.type
+      }, ...prev.slice(0, 9)]);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
@@ -133,7 +179,7 @@ export default function AdminDashboard() {
                <h1 className="text-2xl font-bold text-gray-800">System Overview</h1>
                <p className="text-sm text-muted-foreground flex items-center gap-2">
                  <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
-                 {isConnected ? "Real-time WebSocket Connected" : "Disconnected"}
+                 {isConnected ? "Real-time WebSocket Connected" : "Connecting..."}
                </p>
              </div>
              <div className="flex gap-2">
@@ -148,7 +194,7 @@ export default function AdminDashboard() {
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Active Users</p>
-                  <h3 className="text-3xl font-bold text-primary mt-1">{activeUsers}</h3>
+                  <h3 className="text-3xl font-bold text-primary mt-1" data-testid="text-active-users">{activeUsers}</h3>
                 </div>
                 <div className="h-12 w-12 bg-blue-50 text-primary rounded-full flex items-center justify-center">
                   <Users className="h-6 w-6" />
@@ -159,7 +205,7 @@ export default function AdminDashboard() {
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Today's Visits</p>
-                  <h3 className="text-3xl font-bold text-gray-800 mt-1">{totalVisits}</h3>
+                  <h3 className="text-3xl font-bold text-gray-800 mt-1" data-testid="text-today-visits">{totalVisits}</h3>
                 </div>
                 <div className="h-12 w-12 bg-green-50 text-accent rounded-full flex items-center justify-center">
                   <TrendingUp className="h-6 w-6" />
@@ -170,7 +216,7 @@ export default function AdminDashboard() {
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Books</p>
-                  <h3 className="text-3xl font-bold text-gray-800 mt-1">12,405</h3>
+                  <h3 className="text-3xl font-bold text-gray-800 mt-1" data-testid="text-total-books">{totalBooks}</h3>
                 </div>
                 <div className="h-12 w-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center">
                   <BookOpen className="h-6 w-6" />
@@ -181,7 +227,7 @@ export default function AdminDashboard() {
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Reg. Citizens</p>
-                  <h3 className="text-3xl font-bold text-gray-800 mt-1">8,932</h3>
+                  <h3 className="text-3xl font-bold text-gray-800 mt-1" data-testid="text-total-users">{totalUsers}</h3>
                 </div>
                 <div className="h-12 w-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center">
                   <UserCheck className="h-6 w-6" />
@@ -261,15 +307,19 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="p-0 h-[200px] overflow-y-auto bg-black relative">
               <div className="absolute top-0 left-0 w-full h-full p-4 space-y-2">
-                {logs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 text-xs animate-in fade-in slide-in-from-left-2 duration-300">
-                    <span className="opacity-50 text-gray-500">[{log.time}]</span>
-                    <span className={`font-bold ${log.type === 'alert' ? 'text-red-500' : 'text-blue-400'}`}>
-                      {log.user}
-                    </span>
-                    <span className="text-gray-300">{log.action}</span>
-                  </div>
-                ))}
+                {logs.length === 0 ? (
+                  <div className="text-gray-500 text-xs">Waiting for activity...</div>
+                ) : (
+                  logs.map((log) => (
+                    <div key={log.id} className="flex items-start gap-3 text-xs animate-in fade-in slide-in-from-left-2 duration-300">
+                      <span className="opacity-50 text-gray-500">[{log.time}]</span>
+                      <span className={`font-bold ${log.type === 'alert' ? 'text-red-500' : 'text-blue-400'}`}>
+                        {log.user}
+                      </span>
+                      <span className="text-gray-300">{log.action}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

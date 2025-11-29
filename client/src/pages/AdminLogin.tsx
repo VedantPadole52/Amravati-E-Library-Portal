@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, ShieldAlert, User, Key } from "lucide-react";
+import { authApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 // Assets from the reference HTML
 const EMBLEM_URL = "https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg";
@@ -13,16 +15,43 @@ const BG_IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/2/23/Inside
 
 export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate network request
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      const response = await authApi.login(email, password);
+      
+      if (response.user.role !== "admin") {
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: "This portal is restricted to authorized administrators only.",
+        });
+        await authApi.logout();
+        return;
+      }
+      
+      toast({
+        title: "Authentication Successful",
+        description: `Welcome, ${response.user.name}`,
+      });
+      
       setLocation("/admin/dashboard");
-    }, 1500);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Failed",
+        description: error.message || "Invalid credentials. Please verify your access rights.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -32,16 +61,14 @@ export default function AdminLogin() {
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${BG_IMAGE_URL})` }}
       >
-        {/* Blue overlay similar to reference --gov-blue (#1e3a8a) with opacity */}
         <div className="absolute inset-0 bg-blue-900/85 mix-blend-multiply"></div>
       </div>
 
       {/* Main Card */}
       <div className="relative z-10 w-full max-w-4xl bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[500px] animate-in fade-in zoom-in duration-500 mx-4">
         
-        {/* Left Side: Branding (Similar to reference) */}
+        {/* Left Side: Branding */}
         <div className="w-full md:w-1/2 bg-gray-50 p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-gray-200 relative overflow-hidden">
-          {/* Decorative top border using the "Gov Orange" color */}
           <div className="absolute top-0 left-0 w-full h-1 bg-[#f97316]"></div>
           
           <img src={EMBLEM_URL} alt="Satyamev Jayate" className="h-24 mb-6 drop-shadow-sm" />
@@ -64,6 +91,7 @@ export default function AdminLogin() {
                 <p>Department of Education</p>
             </div>
             <img src={DIGITAL_INDIA_URL} alt="Digital India" className="h-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-300" />
+            <p className="text-xs text-gray-400 mt-2">Demo: admin@amc.edu / admin123</p>
           </div>
         </div>
 
@@ -94,7 +122,10 @@ export default function AdminLogin() {
                   type="email" 
                   placeholder="admin@amc.gov.in" 
                   className="pl-9 border-gray-300 focus-visible:ring-blue-900 focus-visible:border-blue-900 transition-all" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required 
+                  data-testid="input-admin-email"
                 />
               </div>
             </div>
@@ -108,7 +139,10 @@ export default function AdminLogin() {
                   type="password" 
                   placeholder="••••••••" 
                   className="pl-9 border-gray-300 focus-visible:ring-blue-900 focus-visible:border-blue-900 transition-all" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required 
+                  data-testid="input-admin-password"
                 />
               </div>
             </div>
@@ -125,6 +159,7 @@ export default function AdminLogin() {
               type="submit" 
               className="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-6 rounded shadow-lg transition-all transform hover:-translate-y-0.5"
               disabled={isLoading}
+              data-testid="button-admin-login"
             >
               {isLoading ? "Authenticating..." : "Access Dashboard"}
             </Button>
