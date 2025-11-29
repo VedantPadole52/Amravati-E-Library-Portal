@@ -1,16 +1,31 @@
 
+import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, BookOpen, ArrowRight, Library, GraduationCap, History } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import heroBg from "@assets/generated_images/modern_digital_library_interior_with_students.png";
 import book1 from "@assets/generated_images/history_book_cover.png";
 import book2 from "@assets/generated_images/mathematics_book_cover.png";
 import book3 from "@assets/generated_images/science_book_cover.png";
 
 export default function Home() {
+  const [, setLocation] = useLocation();
+
+  const handleNcertClick = () => {
+    setLocation("/login");
+  };
+
+  const handleCompetitiveExamsClick = () => {
+    setLocation("/login");
+  };
+
+  const handleHistoricalArchivesClick = () => {
+    setLocation("/login");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-secondary/30 font-sans">
       <Header variant="public" />
@@ -61,7 +76,11 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Category 1 */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-border">
+            <button 
+              onClick={handleHistoricalArchivesClick}
+              className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-border text-left"
+              data-testid="button-historical-archives"
+            >
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
               <img src={book1} alt="History" className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
@@ -69,10 +88,14 @@ export default function Home() {
                 <h3 className="text-xl font-bold mb-1">Historical Archives</h3>
                 <p className="text-sm text-white/80">Digitized records of Amravati's heritage.</p>
               </div>
-            </div>
+            </button>
 
             {/* Category 2 */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-border">
+            <button 
+              onClick={handleCompetitiveExamsClick}
+              className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-border text-left"
+              data-testid="button-competitive-exams"
+            >
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
               <img src={book2} alt="Math" className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
@@ -80,10 +103,14 @@ export default function Home() {
                 <h3 className="text-xl font-bold mb-1">Competitive Exams</h3>
                 <p className="text-sm text-white/80">MPSC, UPSC, and Banking prep materials.</p>
               </div>
-            </div>
+            </button>
 
             {/* Category 3 */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-border">
+            <button 
+              onClick={handleNcertClick}
+              className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-border text-left"
+              data-testid="button-ncert-textbooks"
+            >
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
               <img src={book3} alt="Science" className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute bottom-0 left-0 p-6 z-20 text-white">
@@ -91,7 +118,7 @@ export default function Home() {
                 <h3 className="text-xl font-bold mb-1">NCERT & Textbooks</h3>
                 <p className="text-sm text-white/80">Essential reading for students of all ages.</p>
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </section>
