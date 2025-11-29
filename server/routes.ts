@@ -483,75 +483,140 @@ export async function registerRoutes(
     }
   });
 
-  // Generate PDF Report
-  app.get("/api/admin/generate-report", requireAdmin, async (req, res) => {
+  // Generate PDF Reports
+  app.get("/api/admin/reports/:type", requireAdmin, async (req, res) => {
     try {
+      const reportType = req.params.type;
       const analytics = await storage.getAnalyticsData();
       const totalUsers = await storage.getTotalUsers();
       const totalBooks = await storage.getTotalBooks();
       const todayVisits = await storage.getTodayVisits();
+      const allUsers = await storage.getAllUsers();
 
-      // Create PDF document
       const doc = new PDFDocument({ margin: 40 });
-      const filename = `e-library-report-${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `e-library-report-${reportType}-${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Set response headers
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-
-      // Pipe to response
       doc.pipe(res);
 
       // Header
-      doc.fontSize(20).font("Helvetica-Bold").text("E-Library Portal - System Report", { align: "center" });
-      doc.fontSize(10).fillColor("#666").text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
+      doc.fontSize(22).font("Helvetica-Bold").text("Amravati E-Library Portal", { align: "center" });
+      doc.fontSize(14).fillColor("#0A346F").text("Library Report", { align: "center" });
+      doc.fontSize(10).fillColor("#666").text(`Report Type: ${reportType.replace(/-/g, ' ').toUpperCase()}`, { align: "center" });
+      doc.fontSize(9).text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
+      doc.moveDown(0.5);
+      doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
       doc.moveDown();
 
-      // Summary Section
-      doc.fontSize(14).fillColor("#000").font("Helvetica-Bold").text("📊 System Summary");
-      doc.fontSize(11).font("Helvetica").fillColor("#333");
-      doc.text(`Total Registered Users: ${totalUsers}`);
-      doc.text(`Total Books in Catalog: ${totalBooks}`);
-      doc.text(`Today's Visits: ${todayVisits}`);
-      doc.moveDown();
+      if (reportType === "system") {
+        // System Overview Report
+        doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("📊 System Overview Report");
+        doc.moveDown();
 
-      // Daily Visits Section
-      doc.fontSize(14).font("Helvetica-Bold").text("📈 Daily Visits (Last 7 Days)");
-      doc.fontSize(10).font("Helvetica");
-      if (analytics.dailyVisits && analytics.dailyVisits.length > 0) {
-        analytics.dailyVisits.forEach((day: any) => {
-          doc.text(`${day.date}: ${day.visits} visits`);
+        doc.fontSize(12).font("Helvetica-Bold").text("Summary Metrics:");
+        doc.fontSize(11).font("Helvetica").fillColor("#333");
+        doc.text(`• Total Registered Users: ${totalUsers}`);
+        doc.text(`• Total Books in Catalog: ${totalBooks}`);
+        doc.text(`• Today's Active Users: ${todayVisits}`);
+        doc.moveDown();
+
+        doc.fontSize(12).font("Helvetica-Bold").fillColor("#000").text("Daily User Activity (Last 7 Days):");
+        doc.fontSize(10).font("Helvetica").fillColor("#333");
+        if (analytics.dailyVisits && analytics.dailyVisits.length > 0) {
+          analytics.dailyVisits.forEach((day: any) => {
+            doc.text(`  ${day.date.padEnd(10)} → ${day.visits} active users`);
+          });
+        }
+        doc.moveDown();
+
+        doc.fontSize(12).font("Helvetica-Bold").fillColor("#000").text("Category Distribution:");
+        doc.fontSize(10).font("Helvetica").fillColor("#333");
+        if (analytics.categoryStats && analytics.categoryStats.length > 0) {
+          analytics.categoryStats.slice(0, 10).forEach((cat: any) => {
+            doc.text(`  ${cat.name.padEnd(25)} → ${cat.count} books`);
+          });
+        }
+        doc.moveDown();
+
+        doc.fontSize(12).font("Helvetica-Bold").fillColor("#000").text("Most Popular Books:");
+        doc.fontSize(10).font("Helvetica").fillColor("#333");
+        if (analytics.topBooks && analytics.topBooks.length > 0) {
+          analytics.topBooks.forEach((book: any, idx: number) => {
+            doc.text(`  ${(idx + 1)}. ${book.title.substring(0, 50)} (${book.reads} reads)`);
+          });
+        }
+      } else if (reportType === "category-details") {
+        // Category Statistics Report
+        doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("📚 Category Statistics Report");
+        doc.moveDown();
+
+        doc.fontSize(12).font("Helvetica-Bold").text("Category Breakdown:");
+        doc.fontSize(10).font("Helvetica").fillColor("#333");
+        
+        const totalCatBooks = analytics.categoryStats?.reduce((sum: number, c: any) => sum + c.count, 0) || 0;
+        
+        if (analytics.categoryStats && analytics.categoryStats.length > 0) {
+          analytics.categoryStats.forEach((cat: any) => {
+            const percentage = totalCatBooks > 0 ? ((cat.count / totalCatBooks) * 100).toFixed(1) : 0;
+            doc.text(`  ${cat.name.padEnd(30)} → ${cat.count} books (${percentage}%)`);
+          });
+        }
+        
+        doc.moveDown();
+        doc.fontSize(11).fillColor("#666").text(`Total Books Across All Categories: ${totalCatBooks}`);
+      } else if (reportType === "user-activity") {
+        // User Activity Report
+        doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("👥 User Activity Report");
+        doc.moveDown();
+
+        doc.fontSize(12).font("Helvetica-Bold").text("User Metrics:");
+        doc.fontSize(11).font("Helvetica").fillColor("#333");
+        doc.text(`• Total Registered Users: ${totalUsers}`);
+        doc.text(`• Today's Active Users: ${todayVisits}`);
+        doc.text(`• Active Users Percentage: ${totalUsers > 0 ? ((todayVisits / totalUsers) * 100).toFixed(1) : 0}%`);
+        doc.moveDown();
+
+        doc.fontSize(12).font("Helvetica-Bold").fillColor("#000").text("Recent User Registrations:");
+        doc.fontSize(10).font("Helvetica").fillColor("#333");
+        allUsers.slice(0, 15).forEach((user: any, idx: number) => {
+          const regDate = new Date(user.createdAt).toLocaleDateString();
+          doc.text(`  ${(idx + 1)}. ${user.name} (${user.email}) - Joined: ${regDate}`);
         });
-      }
-      doc.moveDown();
+      } else if (reportType === "circulation") {
+        // Book Circulation Report
+        doc.fontSize(16).font("Helvetica-Bold").fillColor("#000").text("📖 Book Circulation Report");
+        doc.moveDown();
 
-      // Category Statistics
-      doc.fontSize(14).font("Helvetica-Bold").text("📚 Category Distribution");
-      doc.fontSize(10).font("Helvetica");
-      if (analytics.categoryStats && analytics.categoryStats.length > 0) {
-        analytics.categoryStats.forEach((cat: any) => {
-          doc.text(`${cat.name}: ${cat.count} books`);
-        });
+        doc.fontSize(12).font("Helvetica-Bold").text("Top Books by Circulation:");
+        doc.fontSize(10).font("Helvetica").fillColor("#333");
+        if (analytics.topBooks && analytics.topBooks.length > 0) {
+          analytics.topBooks.forEach((book: any, idx: number) => {
+            doc.text(`  ${(idx + 1)}. ${book.title.substring(0, 50)}`);
+            doc.text(`     Times Read: ${book.reads}`, { indent: 20 });
+          });
+        }
+        
+        doc.moveDown();
+        doc.fontSize(12).font("Helvetica-Bold").fillColor("#000").text("Collection Statistics:");
+        doc.fontSize(11).font("Helvetica").fillColor("#333");
+        doc.text(`• Total Books: ${totalBooks}`);
+        doc.text(`• Categories: ${analytics.categoryStats?.length || 0}`);
       }
-      doc.moveDown();
 
-      // Top Books
-      doc.fontSize(14).font("Helvetica-Bold").text("⭐ Top Books by Reads");
-      doc.fontSize(10).font("Helvetica");
-      if (analytics.topBooks && analytics.topBooks.length > 0) {
-        analytics.topBooks.forEach((book: any, idx: number) => {
-          doc.text(`${idx + 1}. ${book.title} - ${book.reads} reads`);
-        });
-      }
       doc.moveDown(2);
-
-      // Footer
-      doc.fontSize(8).fillColor("#999").text("This is an automated report. Generated by E-Library Admin Portal.", { align: "center" });
+      doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+      doc.fontSize(8).fillColor("#999").text("© Amravati Municipal Corporation - E-Library Portal. This is an automated report.", { align: "center" });
 
       doc.end();
     } catch (error: any) {
       res.status(500).json({ message: "Failed to generate report", error: error.message });
     }
+  });
+
+  // Legacy report endpoint for compatibility
+  app.get("/api/admin/generate-report", requireAdmin, async (req, res) => {
+    res.redirect("/api/admin/reports/system");
   });
 
   // ============= ANNOUNCEMENTS ROUTES =============
