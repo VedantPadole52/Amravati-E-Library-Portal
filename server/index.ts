@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import compression from "compression";
 
 const app = express();
 const httpServer = createServer(app);
@@ -12,15 +13,20 @@ declare module "http" {
   }
 }
 
+// Enable compression for all responses (traffic optimization)
+app.use(compression({ level: 6, threshold: 1024 }));
+
+// Increase body size limit for file uploads
 app.use(
   express.json({
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
+    limit: "50mb",
   }),
 );
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // Serve static files (uploads folder) - both dev and production
 import path from "path";

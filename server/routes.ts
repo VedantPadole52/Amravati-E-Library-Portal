@@ -16,11 +16,47 @@ import PDFDocument from "pdfkit";
 import XLSX from "xlsx";
 import { eq, and } from "drizzle-orm";
 import OpenAI from "openai";
+import rateLimit from "express-rate-limit";
 
 const PgSession = connectPgSimple(session);
 
 // Initialize OpenAI client - the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+
+// Rate limiting middleware for maximum traffic handling
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 100, // 100 requests per minute
+  message: "Too many requests, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !!(req.session.userId && req.session.userRole === "admin"), // Skip rate limit for admins
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minute window
+  max: 5, // 5 requests per 15 minutes
+  message: "Too many login attempts, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Simple in-memory cache for frequent API calls
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 60 * 1000; // 1 minute
+
+function getCached(key: string) {
+  const item = cache.get(key);
+  if (item && Date.now() - item.timestamp < CACHE_DURATION) {
+    return item.data;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any) {
+  cache.set(key, { data, timestamp: Date.now() });
+}
 
 // Setup file upload
 const uploadDir = path.join(".", "public", "uploads");
