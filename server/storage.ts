@@ -145,8 +145,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBook(id: number): Promise<boolean> {
-    const result = await db.delete(books).where(eq(books.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
+    // Use transaction to delete related records first
+    return await db.transaction(async (tx) => {
+      // Delete all reading history for this book
+      await tx.delete(readingHistory).where(eq(readingHistory.bookId, id));
+      // Delete the book
+      const result = await tx.delete(books).where(eq(books.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    });
   }
 
   async searchBooks(query: string, page: number = 1, limit: number = 20): Promise<{ books: Book[]; total: number }> {
