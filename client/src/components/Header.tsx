@@ -286,23 +286,6 @@ export default function Header({ variant = "public" }: HeaderProps) {
       </nav>
 
       <NewsModal open={newsModalOpen} onOpenChange={setNewsModalOpen} />
-
-      {/* Ticker (Global) */}
-      <div className="bg-[#fff7ed] border-b border-[#fdba74] h-10 flex items-center overflow-hidden">
-        <div className="container mx-auto flex items-center px-4">
-          <div className="bg-[#ea580c] text-white px-3 py-1 text-[10px] font-bold uppercase mr-4 rounded-sm shadow whitespace-nowrap shrink-0">
-            Latest Notices
-          </div>
-          <div className="overflow-hidden w-full">
-             <div className="animate-[ticker_20s_linear_infinite] whitespace-nowrap inline-block w-full text-sm font-medium text-[#c2410c]">
-                <span className="mr-8">📢 New MPSC Study Materials Uploaded!</span>
-                <span className="mr-8">📅 Library closed on 15th August for Independence Day.</span>
-                <span className="mr-8">🏆 "Best Reader" Award Ceremony on Sunday.</span>
-                <span className="mr-8">📘 Class 10th & 12th Question Banks now available.</span>
-             </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
