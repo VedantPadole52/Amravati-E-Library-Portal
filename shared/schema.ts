@@ -163,6 +163,7 @@ export const insertAnnouncementSchema = createInsertSchema(announcements).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  createdBy: true,
 });
 
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
