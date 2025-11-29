@@ -200,10 +200,14 @@ export default function CitizenDashboard() {
     }
   };
 
+  const getBookCoverImage = (book: any) => {
+    if (book.coverUrl && book.coverUrl.startsWith("/uploads")) {
+      return book.coverUrl; // Real uploaded image
+    }
+    return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300'%3E%3Crect fill='%231e3a8a' width='200' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='24' fill='white' text-anchor='middle' dominant-baseline='middle'%3E" + encodeURIComponent(book.title.substring(0, 15)) + "%3C/text%3E%3C/svg%3E";
+  };
+
   const filteredBooks = books.filter(book => {
-    // Only show books with actual cover URL from admin upload
-    if (!book.coverUrl) return false;
-    
     if (activeTab === "all") return true;
     if (activeTab.startsWith("cat-")) {
       const categoryId = parseInt(activeTab.split("-")[1]);
@@ -355,10 +359,14 @@ export default function CitizenDashboard() {
                       <div key={book.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col" data-testid={`card-book-${book.id}`}>
                         <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
                           <img 
-                            src={book.coverUrl || ""} 
+                            src={getBookCoverImage(book)} 
                             alt={book.title} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                             loading="lazy"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300'%3E%3Crect fill='%231e3a8a' width='200' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='white' text-anchor='middle' dominant-baseline='middle'%3EBook Cover%3C/text%3E%3C/svg%3E";
+                            }}
                             data-testid={`img-book-cover-${book.id}`}
                           />
                           <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
