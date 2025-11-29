@@ -331,24 +331,40 @@ export default function CitizenDashboard() {
                             <p className="text-xs text-gray-500 mt-1">{book.author}</p>
                           </div>
                           
-                          <div className="mt-auto flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="flex-1 text-xs h-8 border-gray-300"
-                              onClick={() => toggleBookmark(book.id)}
-                              data-testid={`button-wishlist-${book.id}`}
-                            >
-                              {bookmarks.has(book.id) ? "✓ Saved" : "Save"}
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              className="flex-1 bg-gray-900 text-white hover:bg-black text-xs h-8"
-                              onClick={() => openPDFViewer(book)}
-                              data-testid={`button-read-${book.id}`}
-                            >
-                              Read
-                            </Button>
+                          <div className="mt-auto space-y-2">
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="flex-1 text-xs h-8 border-gray-300"
+                                onClick={() => toggleBookmark(book.id)}
+                                data-testid={`button-wishlist-${book.id}`}
+                              >
+                                {bookmarks.has(book.id) ? "✓ Saved" : "Save"}
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="flex-1 bg-gray-900 text-white hover:bg-black text-xs h-8"
+                                onClick={() => openPDFViewer(book)}
+                                data-testid={`button-read-${book.id}`}
+                              >
+                                Read
+                              </Button>
+                            </div>
+                            {book.description && book.description.startsWith("Google Books:") && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="w-full text-xs h-7 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                onClick={() => {
+                                  const link = book.description?.replace("Google Books: ", "") || "";
+                                  if (link && link !== "N/A") window.open(link, "_blank");
+                                }}
+                                data-testid={`button-google-books-${book.id}`}
+                              >
+                                📖 Google Books
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
