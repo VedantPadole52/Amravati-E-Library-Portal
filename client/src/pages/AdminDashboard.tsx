@@ -79,6 +79,46 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleGenerateReport = async () => {
+    try {
+      const response = await fetch("/api/admin/generate-report", {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate report");
+      }
+
+      // Get filename from response headers
+      const contentDisposition = response.headers.get("content-disposition");
+      const filename = contentDisposition
+        ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+        : "e-library-report.pdf";
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "Report generated and downloaded",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to generate report",
+      });
+    }
+  };
+
   const connectWebSocket = () => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
@@ -192,8 +232,14 @@ export default function AdminDashboard() {
                </p>
              </div>
              <div className="flex gap-2">
-               <Button variant="outline" size="sm">Export Data</Button>
-               <Button size="sm" className="bg-primary">Generate Report</Button>
+               <Button 
+                 variant="outline" 
+                 size="sm"
+                 onClick={() => handleGenerateReport()}
+                 data-testid="button-generate-report"
+               >
+                 📄 Generate Report
+               </Button>
              </div>
           </div>
 
