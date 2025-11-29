@@ -60,6 +60,11 @@ export interface IStorage {
   getAnalyticsData(): Promise<any>;
   getAllUsers(): Promise<User[]>;
   deleteCategory(id: number): Promise<boolean>;
+  
+  // User management
+  blockUser(userId: string): Promise<User | undefined>;
+  unblockUser(userId: string): Promise<User | undefined>;
+  getUserActivityByPeriod(period: "daily" | "weekly" | "monthly" | "yearly"): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -369,6 +374,60 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async blockUser(userId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ isBlocked: true })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async unblockUser(userId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ isBlocked: false })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async getUserActivityByPeriod(period: "daily" | "weekly" | "monthly" | "yearly"): Promise<any[]> {
+    const intervalMap = {
+      daily: "1 day",
+      weekly: "7 days",
+      monthly: "30 days",
+      yearly: "365 days"
+    };
+    
+    const interval = intervalMap[period];
+    const result = await db.select({
+      period: sql<string>`to_char(${readingHistory.lastAccessedAt}, ${
+        period === "daily" ? "'YYYY-MM-DD'" :
+        period === "weekly" ? "'YYYY-W'||to_char(${readingHistory.lastAccessedAt}, 'WW')" :
+        period === "monthly" ? "'YYYY-MM'" :
+        "'YYYY'"
+      })`,
+      count: sql<number>`count(distinct ${readingHistory.userId})`
+    })
+    .from(readingHistory)
+    .where(sql`${readingHistory.lastAccessedAt} > now() - interval '${sql.raw(interval)}'`)
+    .groupBy(sql<string>`to_char(${readingHistory.lastAccessedAt}, ${
+      period === "daily" ? "'YYYY-MM-DD'" :
+      period === "weekly" ? "'YYYY-W'||to_char(${readingHistory.lastAccessedAt}, 'WW')" :
+      period === "monthly" ? "'YYYY-MM'" :
+      "'YYYY'"
+    })`)
+    .orderBy(sql`to_char(${readingHistory.lastAccessedAt}, ${
+      period === "daily" ? "'YYYY-MM-DD'" :
+      period === "weekly" ? "'YYYY-W'||to_char(${readingHistory.lastAccessedAt}, 'WW')" :
+      period === "monthly" ? "'YYYY-MM'" :
+      "'YYYY'"
+    })`);
+    
+    return result;
   }
 
   async deleteCategory(id: number): Promise<boolean> {

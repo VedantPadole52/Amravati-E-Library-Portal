@@ -105,7 +105,15 @@ Preferred communication style: Simple, everyday language.
 - Top books by reads
 - User activity logs with timestamps
 
-## Demo Credentials
+## Recent Fixes (This Session)
+
+### User Management Improvements (FIXED)
+- **Sorted User List**: Users now display in systematic order by date (newest first), name (A-Z), or status (active/blocked)
+- **User Blocking Feature**: Admins can now block/unblock users with Block button in user management table
+- **User Status Display**: Clear visual indicator showing if user is Active (✓ green) or Blocked (🔒 red)
+- **Blocked User Highlighting**: Blocked users' rows are highlighted in red in the table
+
+### Demo Credentials
 
 **Citizen:**
 - Email: `demo@user.com`

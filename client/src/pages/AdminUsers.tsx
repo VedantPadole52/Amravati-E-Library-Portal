@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Mail, Phone, Calendar, ArrowLeft, Search } from "lucide-react";
+import { Users, Mail, Phone, Calendar, ArrowLeft, Search, Ban, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface User {
@@ -14,6 +14,7 @@ interface User {
   email: string;
   phone?: string;
   role: string;
+  isBlocked?: boolean;
   createdAt: string;
 }
 
@@ -22,6 +23,7 @@ export default function AdminUsers() {
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<"name" | "date" | "status">("date");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -34,8 +36,9 @@ export default function AdminUsers() {
       const response = await fetch("/api/admin/users");
       if (!response.ok) throw new Error("Failed to load users");
       const data = await response.json();
-      setUsers(data.users || []);
-      setFilteredUsers(data.users || []);
+      const sorted = sortUsersList(data.users || [], sortBy);
+      setUsers(sorted);
+      setFilteredUsers(sorted);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -45,6 +48,21 @@ export default function AdminUsers() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const sortUsersList = (userList: User[], sortType: string) => {
+    const sorted = [...userList];
+    if (sortType === "name") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortType === "date") {
+      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortType === "status") {
+      sorted.sort((a, b) => {
+        if (a.isBlocked === b.isBlocked) return 0;
+        return a.isBlocked ? 1 : -1;
+      });
+    }
+    return sorted;
   };
 
   const handleSearch = (query: string) => {
@@ -57,6 +75,37 @@ export default function AdminUsers() {
         u.email.toLowerCase().includes(query.toLowerCase())
       );
       setFilteredUsers(filtered);
+    }
+  };
+
+  const handleBlockUser = async (userId: string, shouldBlock: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/block`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocked: shouldBlock })
+      });
+      if (!response.ok) throw new Error("Failed to update user");
+      
+      const updatedUser = await response.json();
+      const newUsers = users.map(u => u.id === userId ? updatedUser : u);
+      setUsers(newUsers);
+      setFilteredUsers(newUsers.filter(u => 
+        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        !searchQuery.trim()
+      ));
+      
+      toast({
+        title: "Success",
+        description: shouldBlock ? "User blocked successfully" : "User unblocked successfully"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
     }
   };
 
@@ -86,9 +135,9 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search & Sort */}
         <Card className="mb-6">
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <Input
@@ -99,13 +148,39 @@ export default function AdminUsers() {
                 data-testid="input-search-users"
               />
             </div>
+            <div className="flex gap-2">
+              <Button 
+                variant={sortBy === "date" ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setSortBy("date"); setFilteredUsers(sortUsersList(users, "date")); }}
+                data-testid="button-sort-date"
+              >
+                Sort by Date
+              </Button>
+              <Button 
+                variant={sortBy === "name" ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setSortBy("name"); setFilteredUsers(sortUsersList(users, "name")); }}
+                data-testid="button-sort-name"
+              >
+                Sort by Name
+              </Button>
+              <Button 
+                variant={sortBy === "status" ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setSortBy("status"); setFilteredUsers(sortUsersList(users, "status")); }}
+                data-testid="button-sort-status"
+              >
+                Sort by Status
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* Users Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Registered Users</CardTitle>
+            <CardTitle>Registered Users ({filteredUsers.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -121,13 +196,15 @@ export default function AdminUsers() {
                       <th className="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-700">Phone</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-700">Role</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-700">Joined</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredUsers.map((user, idx) => (
-                      <tr key={user.id} className="border-b hover:bg-gray-50" data-testid={`row-user-${idx}`}>
-                        <td className="px-4 py-3 text-gray-800">{user.name}</td>
+                      <tr key={user.id} className={`border-b hover:bg-gray-50 ${user.isBlocked ? "bg-red-50" : ""}`} data-testid={`row-user-${idx}`}>
+                        <td className="px-4 py-3 text-gray-800 font-medium">{user.name}</td>
                         <td className="px-4 py-3 text-gray-600 flex items-center gap-2">
                           <Mail className="h-4 w-4 text-gray-400" />
                           {user.email}
@@ -145,9 +222,37 @@ export default function AdminUsers() {
                             {user.role}
                           </span>
                         </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            user.isBlocked
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {user.isBlocked ? "🔒 Blocked" : "✓ Active"}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 text-gray-600 flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
                           {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Button
+                            size="sm"
+                            variant={user.isBlocked ? "default" : "destructive"}
+                            onClick={() => handleBlockUser(user.id, !user.isBlocked)}
+                            className="gap-1 text-xs"
+                            data-testid={`button-toggle-block-${user.id}`}
+                          >
+                            {user.isBlocked ? (
+                              <>
+                                <Check className="h-3 w-3" /> Unblock
+                              </>
+                            ) : (
+                              <>
+                                <Ban className="h-3 w-3" /> Block
+                              </>
+                            )}
+                          </Button>
                         </td>
                       </tr>
                     ))}

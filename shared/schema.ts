@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   phone: varchar("phone", { length: 15 }),
   password: text("password").notNull(),
   role: varchar("role", { length: 20 }).notNull().default("citizen"), // 'citizen' or 'admin'
+  isBlocked: boolean("is_blocked").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

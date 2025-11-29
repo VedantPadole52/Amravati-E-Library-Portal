@@ -420,6 +420,43 @@ export async function registerRoutes(
     }
   });
 
+  // Block/Unblock user
+  app.patch("/api/admin/users/:userId/block", requireAdmin, async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const { blocked } = req.body;
+      
+      let user;
+      if (blocked) {
+        user = await storage.blockUser(userId);
+      } else {
+        user = await storage.unblockUser(userId);
+      }
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to update user", error: error.message });
+    }
+  });
+
+  // Get user activity by period
+  app.get("/api/admin/user-activity/:period", requireAdmin, async (req, res) => {
+    try {
+      const period = req.params.period as "daily" | "weekly" | "monthly" | "yearly";
+      if (!["daily", "weekly", "monthly", "yearly"].includes(period)) {
+        return res.status(400).json({ message: "Invalid period" });
+      }
+      const activity = await storage.getUserActivityByPeriod(period);
+      res.json({ activity });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch activity", error: error.message });
+    }
+  });
+
   // Delete category
   app.delete("/api/categories/:id", requireAdmin, async (req, res) => {
     try {
