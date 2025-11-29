@@ -515,7 +515,7 @@ export default function AdminBookManager() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredBooks.map((book) => (
+                  {filteredBooks.map((book, idx) => (
                     <tr key={book.id} className="hover:bg-gray-50" data-testid={`row-book-${book.id}`}>
                       <td className="px-6 py-4 text-sm text-gray-900 font-medium">{book.title}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{book.author}</td>
