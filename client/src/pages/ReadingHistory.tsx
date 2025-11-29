@@ -78,7 +78,7 @@ export default function ReadingHistory() {
 
   const completedBooks = history.filter(h => h.completedAt);
   const inProgressBooks = history.filter(h => !h.completedAt && h.progress && h.progress > 0);
-  const bookmarkedBooks = history.filter(h => h.isBookmarked);
+  const bookmarkedBooks = history.filter(h => h.isBookmarked === true);
 
   const displayedHistory = 
     activeTab === "completed" ? completedBooks :
@@ -135,6 +135,7 @@ export default function ReadingHistory() {
             variant={activeTab === "completed" ? "default" : "outline"} 
             onClick={() => setActiveTab("completed")}
             className={activeTab === "completed" ? "bg-[#1e3a8a]" : ""}
+            data-testid="button-completed-tab"
           >
             Completed ({completedBooks.length})
           </Button>

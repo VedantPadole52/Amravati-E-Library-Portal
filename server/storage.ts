@@ -473,7 +473,7 @@ export class DatabaseStorage implements IStorage {
       count: sql<number>`count(distinct ${readingHistory.userId})`
     })
     .from(readingHistory)
-    .where(sql`${readingHistory.lastActivityAt} > now() - interval '${sql.raw(interval)}'`)
+    .where(sql`${readingHistory.lastAccessedAt} > now() - interval '${sql.raw(interval)}'`)
     .groupBy(sql<string>`to_char(${readingHistory.lastAccessedAt}, ${
       period === "daily" ? "'YYYY-MM-DD'" :
       period === "weekly" ? "'YYYY-W'||to_char(${readingHistory.lastAccessedAt}, 'WW')" :

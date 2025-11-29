@@ -66,21 +66,36 @@ export default function CitizenDashboard() {
   };
 
   const toggleBookmark = async (bookId: number) => {
-    const newBookmarks = new Set(bookmarks);
-    if (newBookmarks.has(bookId)) {
-      newBookmarks.delete(bookId);
-      toast({
-        title: "Removed from wishlist",
-        description: "Book removed from your reading list"
+    try {
+      const response = await fetch(`/api/reading-history/bookmark/${bookId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
       });
-    } else {
-      newBookmarks.add(bookId);
+
+      if (response.ok) {
+        const newBookmarks = new Set(bookmarks);
+        if (newBookmarks.has(bookId)) {
+          newBookmarks.delete(bookId);
+          toast({
+            title: "Removed from wishlist",
+            description: "Book removed from your reading list"
+          });
+        } else {
+          newBookmarks.add(bookId);
+          toast({
+            title: "Added to wishlist",
+            description: "Book added to your reading list"
+          });
+        }
+        setBookmarks(newBookmarks);
+      }
+    } catch (error) {
       toast({
-        title: "Added to wishlist",
-        description: "Book added to your reading list"
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update bookmark"
       });
     }
-    setBookmarks(newBookmarks);
   };
 
   const openPDFViewer = (book: BookType) => {

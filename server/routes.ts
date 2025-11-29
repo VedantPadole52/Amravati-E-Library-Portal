@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool, db } from "./db";
-import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema, activeSessions, readingHistory } from "@shared/schema";
+import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema, activeSessions, readingHistory, users } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { WebSocketServer } from "ws";
 import multer, { type Multer } from "multer";
@@ -409,15 +409,14 @@ export async function registerRoutes(
         const validatedData = insertReadingHistorySchema.parse({ 
           userId, 
           bookId, 
-          progress: Math.max(progress, 10), // Ensure minimum 10% progress
-          lastReadAt: new Date()
+          progress: Math.max(progress, 10)
         });
         const history = await storage.updateReadingProgress(validatedData);
         return res.json({ message: "Reading progress tracked", history });
       } else {
         const updated = await db
           .update(readingHistory)
-          .set({ lastReadAt: new Date() })
+          .set({ lastAccessedAt: new Date() })
           .where(and(eq(readingHistory.userId, userId), eq(readingHistory.bookId, bookId)))
           .returning();
         return res.json({ message: "Progress updated successfully", history: updated[0] });
