@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X, Download } from "lucide-react";
@@ -6,12 +6,24 @@ import { ChevronLeft, ChevronRight, X, Download } from "lucide-react";
 interface PDFViewerProps {
   title: string;
   author: string;
+  bookId?: number;
   onClose: () => void;
 }
 
-export default function PDFViewer({ title, author, onClose }: PDFViewerProps) {
+export default function PDFViewer({ title, author, bookId, onClose }: PDFViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 50; // Dummy PDF has 50 pages
+
+  // Track reading activity
+  useEffect(() => {
+    if (bookId) {
+      fetch("/api/reading-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId, progress: 10 })
+      }).catch(() => {});
+    }
+  }, [bookId]);
 
   // Dummy PDF content pages
   const dummyPages = Array.from({ length: totalPages }, (_, i) => `
@@ -83,6 +95,15 @@ export default function PDFViewer({ title, author, onClose }: PDFViewerProps) {
               variant="outline"
               size="sm"
               className="gap-2"
+              onClick={() => {
+                const element = document.createElement("a");
+                element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(dummyPages.join("\n\n")));
+                element.setAttribute("download", `${title.replace(/\s+/g, "_")}.txt`);
+                element.style.display = "none";
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+              }}
               data-testid="button-pdf-download"
             >
               <Download className="h-4 w-4" /> Download

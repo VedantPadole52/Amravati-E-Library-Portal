@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool, db } from "./db";
-import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema, activeSessions } from "@shared/schema";
+import { registerSchema, loginSchema, insertBookSchema, insertCategorySchema, insertReadingHistorySchema, insertAnnouncementSchema, activeSessions, readingHistory } from "@shared/schema";
 import { fromError } from "zod-validation-error";
 import { WebSocketServer } from "ws";
 import multer, { type Multer } from "multer";
@@ -14,7 +14,7 @@ import path from "path";
 import fs from "fs";
 import PDFDocument from "pdfkit";
 import XLSX from "xlsx";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const PgSession = connectPgSimple(session);
 
@@ -366,7 +366,16 @@ export async function registerRoutes(
     try {
       const userId = req.session.userId!;
       const history = await storage.getReadingHistory(userId);
-      res.json({ history });
+      
+      // Fetch full book details for each history entry
+      const enrichedHistory = await Promise.all(
+        history.map(async (h) => {
+          const book = await storage.getBook(h.bookId);
+          return { ...h, book };
+        })
+      );
+      
+      res.json({ history: enrichedHistory });
     } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch reading history", error: error.message });
     }
@@ -384,13 +393,35 @@ export async function registerRoutes(
     }
   });
 
-  // Update reading progress
+  // Track book read
   app.post("/api/reading-history", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
-      const validatedData = insertReadingHistorySchema.parse({ ...req.body, userId });
-      const history = await storage.updateReadingProgress(validatedData);
-      res.json({ message: "Progress updated successfully", history });
+      const { bookId, progress = 10 } = req.body;
+      
+      if (!bookId) {
+        return res.status(400).json({ message: "Book ID is required" });
+      }
+
+      // Get existing reading record or create new one
+      let existing = await storage.getReadingProgress(userId, bookId);
+      if (!existing) {
+        const validatedData = insertReadingHistorySchema.parse({ 
+          userId, 
+          bookId, 
+          progress: Math.max(progress, 10), // Ensure minimum 10% progress
+          lastReadAt: new Date()
+        });
+        const history = await storage.updateReadingProgress(validatedData);
+        return res.json({ message: "Reading progress tracked", history });
+      } else {
+        const updated = await db
+          .update(readingHistory)
+          .set({ lastReadAt: new Date() })
+          .where(and(eq(readingHistory.userId, userId), eq(readingHistory.bookId, bookId)))
+          .returning();
+        return res.json({ message: "Progress updated successfully", history: updated[0] });
+      }
     } catch (error: any) {
       if (error.name === "ZodError") {
         return res.status(400).json({ message: fromError(error).toString() });
@@ -886,6 +917,24 @@ export async function registerRoutes(
   });
 
   // ============= LEADERBOARD ROUTES =============
+
+  // Get user wishlist
+  app.get("/api/user/wishlist", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const history = await storage.getReadingHistory(userId);
+      const bookmarked = history.filter(h => h.isBookmarked);
+      const bookIds = bookmarked.map(h => h.bookId);
+      
+      res.json({ 
+        bookIds,
+        bookmarks: bookmarked,
+        count: bookIds.length 
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch wishlist", error: error.message });
+    }
+  });
 
   // Get top readers
   app.get("/api/leaderboard/top-readers", async (req, res) => {

@@ -415,6 +415,7 @@ export default function CitizenDashboard() {
         <PDFViewer
           title={selectedBook.title}
           author={selectedBook.author}
+          bookId={selectedBook.id}
           onClose={() => setShowPDFViewer(false)}
         />
       )}
