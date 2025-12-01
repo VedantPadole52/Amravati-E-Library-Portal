@@ -58,12 +58,17 @@ export default function CitizenDashboard() {
     
     // Refresh books every 2 seconds to show new admin-added books and real-time cover updates
     const interval = setInterval(() => {
-      loadData();
+      // If there's an active search, refresh with search filter
+      if (searchQuery.trim()) {
+        handleSearch(currentPage, searchQuery);
+      } else {
+        loadData(currentPage);
+      }
       loadBookmarks();
     }, 2000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [searchQuery, currentPage]);
 
   const loadBookmarks = async () => {
     try {
@@ -504,7 +509,14 @@ export default function CitizenDashboard() {
                 <Button 
                   variant="outline" 
                   disabled={currentPage === 1}
-                  onClick={() => handleSearch(currentPage - 1)}
+                  onClick={() => {
+                    const newPage = currentPage - 1;
+                    if (searchQuery.trim()) {
+                      handleSearch(newPage, searchQuery);
+                    } else {
+                      loadData(newPage);
+                    }
+                  }}
                   data-testid="button-prev-page"
                 >
                   Previous
@@ -515,7 +527,14 @@ export default function CitizenDashboard() {
                 <Button 
                   variant="outline"
                   disabled={currentPage * pageSize >= totalBooks}
-                  onClick={() => handleSearch(currentPage + 1)}
+                  onClick={() => {
+                    const newPage = currentPage + 1;
+                    if (searchQuery.trim()) {
+                      handleSearch(newPage, searchQuery);
+                    } else {
+                      loadData(newPage);
+                    }
+                  }}
                   data-testid="button-next-page"
                 >
                   Next
