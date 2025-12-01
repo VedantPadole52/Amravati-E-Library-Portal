@@ -289,30 +289,30 @@ export default function CitizenDashboard() {
       <main className="flex-grow container mx-auto px-4 py-8">
         
         {/* User Welcome & Stats */}
-        <section className="mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 bg-[#1e3a8a] rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md border-4 border-white">
+        <section className="mb-6 sm:mb-8">
+          <div className="bg-white rounded-lg p-3 sm:p-6 shadow-sm border border-gray-200 flex flex-col gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="h-12 sm:h-16 w-12 sm:w-16 bg-[#1e3a8a] rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-bold shadow-md border-2 sm:border-4 border-white flex-shrink-0">
                 {user?.name.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Welcome back, {user?.name}!</h1>
-                <p className="text-gray-500 text-sm">Citizen Member • {user?.email}</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">Welcome, {user?.name.split(' ')[0]}!</h1>
+                <p className="text-gray-500 text-xs sm:text-sm truncate">Citizen Member • {user?.email.split('@')[0]}</p>
               </div>
             </div>
             
-            <div className="flex gap-6 text-center">
-              <div className="px-4 py-2 bg-blue-50 rounded border border-blue-100">
-                <p className="text-2xl font-bold text-[#1e3a8a]" data-testid="text-books-read">{stats.booksRead}</p>
-                <p className="text-xs font-bold text-gray-500 uppercase">Books Read</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="px-2 sm:px-4 py-2 bg-blue-50 rounded border border-blue-100 text-center">
+                <p className="text-lg sm:text-2xl font-bold text-[#1e3a8a]" data-testid="text-books-read">{stats.booksRead}</p>
+                <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">Books Read</p>
               </div>
-              <div className="px-4 py-2 bg-orange-50 rounded border border-orange-100">
-                <p className="text-2xl font-bold text-[#ea580c]" data-testid="text-borrowed">{stats.borrowed}</p>
-                <p className="text-xs font-bold text-gray-500 uppercase">Borrowed</p>
+              <div className="px-2 sm:px-4 py-2 bg-orange-50 rounded border border-orange-100 text-center">
+                <p className="text-lg sm:text-2xl font-bold text-[#ea580c]" data-testid="text-borrowed">{stats.borrowed}</p>
+                <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">Borrowed</p>
               </div>
-              <div className="px-4 py-2 bg-green-50 rounded border border-green-100">
-                <p className="text-2xl font-bold text-green-700" data-testid="text-points">{stats.points}</p>
-                <p className="text-xs font-bold text-gray-500 uppercase">Points</p>
+              <div className="px-2 sm:px-4 py-2 bg-green-50 rounded border border-green-100 text-center">
+                <p className="text-lg sm:text-2xl font-bold text-green-700" data-testid="text-points">{stats.points}</p>
+                <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">Points</p>
               </div>
             </div>
           </div>
@@ -343,12 +343,12 @@ export default function CitizenDashboard() {
             )}
 
             {/* Search & Filter Bar */}
-            <div className="bg-white p-4 rounded shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4">
+            <div className="bg-white p-3 sm:p-4 rounded shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-2 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 <Input 
-                  placeholder="Search by Title, Author, ISBN, or Category..." 
-                  className="pl-10 border-gray-300 focus-visible:ring-[#1e3a8a]"
+                  placeholder="Search books..." 
+                  className="pl-10 text-sm border-gray-300 focus-visible:ring-[#1e3a8a] h-10 sm:h-auto"
                   value={searchQuery}
                   onChange={(e) => handleSearchInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch(1, searchQuery)}
@@ -356,11 +356,12 @@ export default function CitizenDashboard() {
                 />
               </div>
               <Button 
-                className="bg-[#1e3a8a] hover:bg-[#172554]"
+                className="bg-[#1e3a8a] hover:bg-[#172554] text-sm h-10 sm:h-auto whitespace-nowrap"
                 onClick={() => handleSearch(1)}
                 data-testid="button-search"
               >
-                Search Library
+                <span className="hidden sm:inline">Search Library</span>
+                <span className="sm:hidden">Search</span>
               </Button>
             </div>
 
@@ -406,7 +407,7 @@ export default function CitizenDashboard() {
                     <p>No books found. Try a different search.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                     {filteredBooks.map((book) => (
                       <div key={book.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all group flex flex-col" data-testid={`card-book-${book.id}`}>
                         <div className="relative aspect-[2/3] overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
@@ -505,7 +506,7 @@ export default function CitizenDashboard() {
             
             {/* Pagination */}
             {totalBooks > pageSize && (
-              <div className="flex items-center justify-center gap-2 mt-6">
+              <div className="flex items-center justify-center gap-1 sm:gap-2 mt-6 flex-wrap">
                 <Button 
                   variant="outline" 
                   disabled={currentPage === 1}
@@ -517,12 +518,14 @@ export default function CitizenDashboard() {
                       loadData(newPage);
                     }
                   }}
+                  className="text-xs sm:text-sm h-9 sm:h-auto px-2 sm:px-4"
                   data-testid="button-prev-page"
                 >
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                 </Button>
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} of {Math.ceil(totalBooks / pageSize)}
+                <span className="text-xs sm:text-sm text-gray-600 px-1">
+                  {currentPage}/{Math.ceil(totalBooks / pageSize)}
                 </span>
                 <Button 
                   variant="outline"
@@ -535,16 +538,18 @@ export default function CitizenDashboard() {
                       loadData(newPage);
                     }
                   }}
+                  className="text-xs sm:text-sm h-9 sm:h-auto px-2 sm:px-4"
                   data-testid="button-next-page"
                 >
-                  Next
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">Next</span>
                 </Button>
               </div>
             )}
           </div>
 
-          {/* Right Sidebar */}
-          <div className="space-y-6">
+          {/* Right Sidebar - Hidden on mobile, shown on lg screens */}
+          <div className="hidden lg:block space-y-6">
             
             {/* Reading History */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
