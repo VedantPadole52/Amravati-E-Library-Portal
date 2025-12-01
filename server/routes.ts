@@ -23,27 +23,47 @@ const PgSession = connectPgSimple(session);
 // Initialize OpenAI client - the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
-// Rate limiting middleware for maximum traffic handling
+// Rate limiting middleware for maximum traffic handling - Optimized for high traffic
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 100, // 100 requests per minute
+  max: 500, // 500 requests per minute (10x increase for high traffic)
   message: "Too many requests, please try again later",
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => !!(req.session.userId && req.session.userRole === "admin"), // Skip rate limit for admins
 });
 
+const searchLimiter = rateLimit({
+  windowMs: 10 * 1000, // 10 second window
+  max: 50, // 50 search requests per 10 seconds (optimized for search-as-you-type)
+  message: "Search rate limit exceeded, please slow down",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 20, // 20 uploads per minute
+  message: "Too many uploads, please wait before uploading again",
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => !!(req.session.userId && req.session.userRole === "admin"), // Admins can upload more
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minute window
-  max: 5, // 5 requests per 15 minutes
+  max: 10, // 10 login attempts per 15 minutes
   message: "Too many login attempts, please try again later",
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Simple in-memory cache for frequent API calls
+// Advanced in-memory cache for frequent API calls - Optimized for high traffic
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 60 * 1000; // 1 minute
+const CACHE_DURATION = 60 * 1000; // 1 minute for general data
+const BOOKS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for books (less frequent changes)
+const CATEGORIES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for categories (rarely changes)
+const MAX_CACHE_SIZE = 500; // Prevent memory bloat
 
 function getCached(key: string) {
   const item = cache.get(key);
@@ -54,7 +74,30 @@ function getCached(key: string) {
   return null;
 }
 
+function getCachedBooks(key: string) {
+  const item = cache.get(key);
+  if (item && Date.now() - item.timestamp < BOOKS_CACHE_DURATION) {
+    return item.data;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function getCachedCategories(key: string) {
+  const item = cache.get(key);
+  if (item && Date.now() - item.timestamp < CATEGORIES_CACHE_DURATION) {
+    return item.data;
+  }
+  cache.delete(key);
+  return null;
+}
+
 function setCache(key: string, data: any) {
+  // Prevent cache from growing too large
+  if (cache.size >= MAX_CACHE_SIZE) {
+    const firstKey = cache.keys().next().value;
+    cache.delete(firstKey);
+  }
   cache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -128,6 +171,11 @@ export async function registerRoutes(
       },
     })
   );
+
+  // Health check endpoint (no rate limit, used for monitoring)
+  app.get("/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
 
   // ============= AUTH ROUTES =============
   
@@ -283,8 +331,8 @@ export async function registerRoutes(
 
   // ============= BOOK ROUTES =============
   
-  // Get all books (with optional search and pagination)
-  app.get("/api/books", async (req, res) => {
+  // Get all books (with optional search and pagination) - Rate limited for high traffic
+  app.get("/api/books", apiLimiter, async (req, res) => {
     try {
       const { search, page = "1", limit = "20" } = req.query;
       const pageNum = Math.max(1, parseInt(page as string) || 1);
@@ -294,7 +342,14 @@ export async function registerRoutes(
       if (search && typeof search === "string") {
         result = await storage.searchBooks(search, pageNum, limitNum);
       } else {
+        // Try cache first for non-search requests
+        const cacheKey = `books_page_${pageNum}_limit_${limitNum}`;
+        const cached = getCachedBooks(cacheKey);
+        if (cached) {
+          return res.json(cached);
+        }
         result = await storage.getAllBooks(pageNum, limitNum);
+        setCache(cacheKey, { books: result.books, total: result.total, page: pageNum, limit: limitNum });
       }
 
       res.json({ books: result.books, total: result.total, page: pageNum, limit: limitNum });
@@ -412,9 +467,15 @@ Create an engaging summary that captures the essence of the book for library use
 
   // ============= CATEGORY ROUTES =============
   
-  app.get("/api/categories", async (req, res) => {
+  app.get("/api/categories", apiLimiter, async (req, res) => {
     try {
+      // Try cache first - categories rarely change
+      const cached = getCachedCategories("all_categories");
+      if (cached) {
+        return res.json({ categories: cached });
+      }
       const categories = await storage.getAllCategories();
+      setCache("all_categories", categories);
       res.json({ categories });
     } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch categories", error: error.message });
@@ -642,7 +703,7 @@ Create an engaging summary that captures the essence of the book for library use
 
   // ============= FILE UPLOAD ROUTE =============
   
-  app.post("/api/upload", requireAdmin, storage_multer.single("file"), async (req: any, res) => {
+  app.post("/api/upload", requireAdmin, uploadLimiter, storage_multer.single("file"), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file provided" });
