@@ -161,49 +161,47 @@ export class DatabaseStorage implements IStorage {
 
   async searchBooks(query: string, page: number = 1, limit: number = 20): Promise<{ books: Book[]; total: number }> {
     const offset = (page - 1) * limit;
-    const searchPattern = `%${query}%`;
-    const exactPattern = query;
+    const lowerQuery = query.toLowerCase();
+    const searchPattern = `%${lowerQuery}%`;
+    const startPattern = `${lowerQuery}%`;
     
-    // Get total count
-    const [{ total }] = await db
-      .select({ total: sql<number>`count(*)` })
-      .from(books)
-      .where(sql`LOWER(${books.title}) LIKE LOWER(${searchPattern}) 
-               OR LOWER(${books.author}) LIKE LOWER(${searchPattern}) 
-               OR LOWER(${books.isbn}) LIKE LOWER(${searchPattern})
-               OR LOWER(${books.subcategory}) LIKE LOWER(${searchPattern})`);
-
-    // Get results with intelligent ranking:
-    // 1. Exact title match (highest priority)
-    // 2. Title starts with query
-    // 3. Title contains query
-    // 4. Exact author match
-    // 5. Author contains query
-    // 6. ISBN match
-    // 7. Subcategory match
-    const bookList = await db
+    // Get results with intelligent ranking - using simple comparisons that work with Drizzle
+    const result = await db
       .select()
       .from(books)
-      .where(sql`LOWER(${books.title}) LIKE LOWER(${searchPattern}) 
-               OR LOWER(${books.author}) LIKE LOWER(${searchPattern}) 
-               OR LOWER(${books.isbn}) LIKE LOWER(${searchPattern})
-               OR LOWER(${books.subcategory}) LIKE LOWER(${searchPattern})`)
+      .where(
+        sql`LOWER(${books.title}) LIKE ${searchPattern} 
+            OR LOWER(${books.author}) LIKE ${searchPattern} 
+            OR LOWER(${books.isbn}) LIKE ${searchPattern}
+            OR LOWER(${books.subcategory}) LIKE ${searchPattern}`
+      )
       .orderBy(
+        // Rank by relevance: exact matches first, then starts with, then contains
         sql`CASE 
-          WHEN LOWER(${books.title}) = LOWER(${exactPattern}) THEN 0
-          WHEN LOWER(${books.title}) LIKE LOWER(${exactPattern} || '%') THEN 1
-          WHEN LOWER(${books.title}) LIKE LOWER(${searchPattern}) THEN 2
-          WHEN LOWER(${books.author}) = LOWER(${exactPattern}) THEN 3
-          WHEN LOWER(${books.author}) LIKE LOWER(${searchPattern}) THEN 4
-          WHEN LOWER(${books.isbn}) = LOWER(${exactPattern}) THEN 5
-          ELSE 6
+          WHEN LOWER(${books.title}) = ${lowerQuery} THEN 0
+          WHEN LOWER(${books.title}) LIKE ${startPattern} THEN 1
+          WHEN LOWER(${books.author}) = ${lowerQuery} THEN 2
+          WHEN LOWER(${books.author}) LIKE ${startPattern} THEN 3
+          ELSE 4
         END`,
         desc(books.createdAt)
       )
       .limit(limit)
       .offset(offset);
 
-    return { books: bookList, total: Number(total) };
+    // Get total count
+    const countResult = await db
+      .select({ total: sql<number>`count(*)` })
+      .from(books)
+      .where(
+        sql`LOWER(${books.title}) LIKE ${searchPattern} 
+            OR LOWER(${books.author}) LIKE ${searchPattern} 
+            OR LOWER(${books.isbn}) LIKE ${searchPattern}
+            OR LOWER(${books.subcategory}) LIKE ${searchPattern}`
+      );
+
+    const total = Number(countResult[0]?.total || 0);
+    return { books: result, total };
   }
 
   // Category operations
