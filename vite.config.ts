@@ -30,29 +30,25 @@ export default defineConfig({
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
   },
+  
+  // ✅ TELLS VITE: "My website lives in the client folder"
   root: path.resolve(import.meta.dirname, "client"),
   
-  // --- THE FIX STARTS HERE ---
   build: {
-    // 1. Output directly to "dist" (Fixes the Download error)
-    outDir: path.resolve(import.meta.dirname, "dist"), 
+    // ✅ TELLS VITE: "Put the finished build in the main 'dist' folder"
+    outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
-    
-    // 2. Increase limit so the warning disappears
     chunkSizeWarningLimit: 3000, 
-    
-    // 3. Split the code (Fixes the 2.7MB file size)
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            return 'vendor'; // Puts React/libraries in a separate file
+            return 'vendor';
           }
         },
       },
     },
   },
-  // --- THE FIX ENDS HERE ---
 
   server: {
     host: "0.0.0.0",
