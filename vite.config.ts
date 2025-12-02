@@ -39,6 +39,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // --- START OF FIX ---
+    chunkSizeWarningLimit: 3000, // Silences the warning
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Puts third-party libraries (React, etc.) in a separate file
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
+      },
+    },
+    // --- END OF FIX ---
   },
   server: {
     host: "0.0.0.0",
