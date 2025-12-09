@@ -1,4 +1,5 @@
 # 📚 Amravati E-Library Portal
+Amravati E-Library (AI-Assisted Build) This project was built to explore the capabilities of Lovable.dev and Replit for rapid prototyping.
 
 A digital library for Amravati Municipal Corporation where people can read books online.
 
